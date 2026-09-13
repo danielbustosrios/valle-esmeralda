@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {MAZE_LEVELS,createMaze,isMazeOpen} from './mazeLevels.js';
+
+const reachable=maze=>{const queue=[maze.start],seen=new Set([`${maze.start.x},${maze.start.y}`]);for(let i=0;i<queue.length;i++){const point=queue[i];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const next={x:point.x+dx,y:point.y+dy},key=`${next.x},${next.y}`;if(isMazeOpen(maze,next.x,next.y)&&!seen.has(key)){seen.add(key);queue.push(next);}}}return seen;};
+
+test('the first two maze worlds grow across ten levels',()=>{assert.deepEqual(MAZE_LEVELS.slice(0,10).map(level=>level.id),[22,23,24,25,26,27,28,29,30,31]);for(let i=1;i<10;i++)assert.ok(MAZE_LEVELS[i].width*MAZE_LEVELS[i].height>MAZE_LEVELS[i-1].width*MAZE_LEVELS[i-1].height);});
+test('every exit and key is reachable',()=>{for(const spec of MAZE_LEVELS){const maze=createMaze(spec),seen=reachable(maze);assert.ok(seen.has(`${maze.exit.x},${maze.exit.y}`));assert.equal(maze.keys.length,spec.keyCount);for(const key of maze.keys)assert.ok(seen.has(`${key.x},${key.y}`));}});
+test('the advanced world adds time pressure only in its final two levels',()=>{const advanced=MAZE_LEVELS.slice(5,10);assert.deepEqual(advanced.map(level=>level.timeLimit>0),[false,false,false,true,true]);assert.equal(advanced.at(-1).keyCount,4);assert.ok(advanced.at(-1).timeLimit>=60);});
+test('the guardian world combines rotation, clocks and moving enemies',()=>{const guardian=MAZE_LEVELS.slice(10,15);assert.deepEqual(guardian.map(level=>level.id),[32,33,34,35,36]);assert.ok(guardian.every(level=>level.timeLimit>0));assert.equal(guardian.filter(level=>level.rotating).length,3);assert.equal(guardian.at(-1).enemyCount,3);for(const spec of guardian)assert.equal(createMaze(spec).enemies.length,spec.enemyCount||0);});
+test('the darkness world introduces four distinct exploration rules',()=>{const darkness=MAZE_LEVELS.slice(-4);assert.deepEqual(darkness.map(level=>level.id),[37,38,39,40]);assert.ok(darkness.every(level=>level.dark&&level.timeLimit===0));assert.equal(darkness[1].lightDrain,true);assert.equal(darkness[2].pulse,true);assert.equal(darkness[3].enemyCount,2);});
