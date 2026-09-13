@@ -1,0 +1,126 @@
+import React,{useEffect,useMemo,useState} from 'react';
+import {MemoryRecoveryGate,PilotAccessGate} from './PilotGates.jsx';
+import {completionPercent,hasPilotAccess,requiresLogicRecovery} from '../game/pilotAccess.js';
+import {clearAuthSession} from '../game/authSession.js';
+
+const PROGRESS_KEY='valle-esmeralda-logic-progress',SHOP_KEY='valle-esmeralda-shop',MAP_POSITION_KEY='valle-esmeralda-map-position',STARTER_CELEBRATION_KEY='valle-esmeralda-four-worlds-celebrated',WORLD_DISCOVERY_KEY='valle-esmeralda-seen-worlds',SHOP_DIALOGUE_DONE_KEY='valle-esmeralda-shop-dialogue-done';
+const STARTER_WORLD_ENDS=[11,17,21,26];
+const WORLDS=[
+  {id:1,name:'Valle Esmeralda',subtitle:'El arte de la parábola',levels:[1,2,3,4,5,6,7,8,9,10,11],image:'./art/level-1.webp',position:{left:'19%',top:'65%'}},
+  {id:2,name:'Puentes del Ingenio',subtitle:'Patrones y razonamiento',levels:[12,13,14,15,16,17],image:'./art/logic-bridge.webp',position:{left:'36%',top:'57%'}},
+  {id:3,name:'Observatorio Cartesiano',subtitle:'Coordenadas y funciones',levels:[18,19,20,21],image:'./art/coordinate-observatory.webp',position:{left:'54%',top:'45%'}},
+  {id:4,name:'Laberintos del Cielo',subtitle:'Orientación, memoria y estrategia',levels:[22,23,24,25,26],image:'./art/maze-world.webp',position:{left:'75%',top:'60%'}},
+  {id:5,name:'Fortaleza de los Enigmas',subtitle:'Laberintos avanzados contrarreloj',levels:[27,28,29,30,31],image:'./art/maze-world-advanced.webp',position:{left:'87%',top:'33%'},requiresFour:true},
+  {id:6,name:'Ciudadela Giratoria',subtitle:'Tiempo, giros y guardianes',levels:[32,33,34,35,36],image:'./art/maze-world-rotating.webp',position:{left:'71%',top:'20%'},unlockAfter:31},
+  {id:7,name:'Galerías de la Penumbra',subtitle:'Memoria, luz y sombras en movimiento',levels:[37,38,39,40,41],image:'./art/maze-world-advanced.webp',position:{left:'57%',top:'33%'},unlockAfter:36},
+  {id:8,name:'Rieles de la Recta',subtitle:'Pendiente, intersección y lanzamientos lineales',levels:[42,43,44,45,46],image:'./art/coordinate-observatory.webp',position:{left:'39%',top:'22%'},unlockAfter:41},
+  {id:9,name:'Islas de las Ondas',subtitle:'Amplitud, frecuencia, seno y coseno',levels:[47,48,49,50,51],image:'./art/wave-islands.webp',position:{left:'12%',top:'25%'},unlockAfter:46},
+  {id:10,name:'Ruinas de la Pólvora',subtitle:'Rutas, explosiones y decisiones estratégicas',levels:[52,53,54,55,56,57,58,59,60],image:'./art/bomb-ruins.webp',position:{left:'12%',top:'43%'},unlockAfter:51},
+  {id:11,name:'Archipiélago del Ingenio',subtitle:'Objetos, caminos y rompecabezas de acción',levels:[61,62,63,64,65,66,67],image:'./art/tropical-puzzle-room.webp',position:{left:'31%',top:'40%'},unlockAfter:60},
+  {id:12,name:'Ruinas Pitagóricas',subtitle:'El desafío final del Coloso',levels:[68],image:'./art/pythagorean-ruins-concept.webp',position:{left:'50%',top:'17%'},unlockAfter:67}
+];
+const ITEMS=[
+  {id:'trail',name:'Orbe celeste',description:'El proyectil brilla con energía azul.',cost:1,icon:'✦'},
+  {id:'cannon',name:'Cañón dorado',description:'Añade un acabado dorado al cañón.',cost:2,icon:'♜'},
+  {id:'frame',name:'Marco esmeralda',description:'Ilumina el borde de cada escenario.',cost:3,icon:'◆'}
+];
+const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch{return fallback;}};
+const applyCosmetics=equipped=>ITEMS.forEach(item=>document.body.classList.toggle(`cosmetic-${item.id}`,equipped.includes(item.id)));
+
+const MAP_ROUTE=[
+  {id:0,x:19,y:65,name:'Valle Esmeralda',href:'?view=world&world=1',links:[1]},
+  {id:1,x:27,y:62,links:[0,2]},
+  {id:2,x:36,y:57,name:'Puentes del Ingenio',href:'?view=world&world=2',links:[1,3,23]},
+  {id:3,x:45,y:52,links:[2,4]},
+  {id:4,x:54,y:45,name:'Observatorio Cartesiano',href:'?view=world&world=3',links:[3,5]},
+  {id:5,x:65,y:51,links:[4,6]},
+  {id:6,x:75,y:60,name:'Laberintos del Cielo',href:'?view=world&world=4',links:[5,7,24]},
+  {id:7,x:82,y:48,requiresFour:true,gateway:true,links:[6,8]},
+  {id:8,x:87,y:33,name:'Fortaleza de los Enigmas',href:'?view=world&world=5',requiresFour:true,gateway:true,links:[7,9]},
+  {id:9,x:80,y:25,requiresFour:true,unlockAfter:31,links:[8,10]},
+  {id:10,x:71,y:20,name:'Ciudadela Giratoria',href:'?view=world&world=6',requiresFour:true,unlockAfter:31,links:[9,11]},
+  {id:11,x:64,y:27,requiresFour:true,unlockAfter:36,links:[10,12]},
+  {id:12,x:57,y:33,name:'Galerías de la Penumbra',href:'?view=world&world=7',requiresFour:true,unlockAfter:36,links:[11,13]},
+  {id:13,x:48,y:27,requiresFour:true,unlockAfter:41,links:[12,14]},
+  {id:14,x:39,y:22,name:'Rieles de la Recta',href:'?view=world&world=8',requiresFour:true,unlockAfter:41,links:[13,15]},
+  {id:15,x:25,y:20,requiresFour:true,unlockAfter:46,links:[14,16]},
+  {id:16,x:12,y:25,name:'Islas de las Ondas',href:'?view=world&world=9',requiresFour:true,unlockAfter:46,links:[15,17]},
+  {id:17,x:10,y:34,requiresFour:true,unlockAfter:51,links:[16,18]},
+  {id:18,x:12,y:43,name:'Ruinas de la Pólvora',href:'?view=world&world=10',requiresFour:true,unlockAfter:51,links:[17,19]},
+  {id:19,x:21,y:42,requiresFour:true,unlockAfter:60,links:[18,20]},
+  {id:20,x:31,y:40,name:'Archipiélago del Ingenio',href:'?view=world&world=11',requiresFour:true,unlockAfter:60,links:[19,21]},
+  {id:21,x:42,y:28,requiresFour:true,unlockAfter:67,links:[20,22]},
+  {id:22,x:50,y:17,name:'Ruinas Pitagóricas',href:'?view=world&world=12',requiresFour:true,unlockAfter:67,links:[21]},
+  {id:23,x:44,y:68,links:[2,24]},
+  {id:24,x:53,y:78,name:'Tienda del Valle',href:'?view=shop',links:[23,6]}
+];
+const DIRECTION_VECTOR={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+const nodeUnlocked=(node,completed,fourComplete,pilotAccess)=>(!node.requiresFour||fourComplete&&pilotAccess)&&(!node.unlockAfter||completed.has(node.unlockAfter));
+
+const unlockWorldForNode=node=>node.id>=7&&node.id<=22?5+Math.floor((node.id-7)/2):null;
+
+function MapRoutes({completed,fourComplete,pilotAccess,opening,revealingWorldId}){
+  const edges=MAP_ROUTE.flatMap(node=>node.links.filter(id=>id>node.id).map(id=>[node,MAP_ROUTE[id]]));
+  return <svg className={`map-routes${opening?' opening':''}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{edges.map(([from,to])=>{const open=nodeUnlocked(from,completed,fourComplete,pilotAccess)&&nodeUnlocked(to,completed,fourComplete,pilotAccess);if(!open)return null;const awakening=opening&&(from.gateway||to.gateway),revealing=revealingWorldId&&(unlockWorldForNode(from)===revealingWorldId||unlockWorldForNode(to)===revealingWorldId);return <g className={`open${awakening?' awakening':''}${revealing?' revealing':''}`} key={`${from.id}-${to.id}`}><line className="route-shadow" x1={from.x} y1={from.y} x2={to.x} y2={to.y}/><line className="route-path" x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></g>;})}</svg>;
+}
+
+function MapTraveler({completed,fourComplete,pilotAccess,previewFinal=false}){
+  const [nodeId,setNodeId]=useState(()=>{if(previewFinal)return 20;const saved=read(MAP_POSITION_KEY,{node:0});if(Number.isInteger(saved.node)&&MAP_ROUTE[saved.node]&&nodeUnlocked(MAP_ROUTE[saved.node],completed,fourComplete,pilotAccess))return saved.node;if(Number.isFinite(saved.x)&&Number.isFinite(saved.y))return MAP_ROUTE.filter(node=>nodeUnlocked(node,completed,fourComplete,pilotAccess)).reduce((best,node)=>Math.hypot(node.x-saved.x,node.y-saved.y)<best.distance?{id:node.id,distance:Math.hypot(node.x-saved.x,node.y-saved.y)}:best,{id:0,distance:Infinity}).id;return 0;});
+  const [motion,setMotion]=useState({moving:false,facing:1});
+  const node=MAP_ROUTE[nodeId],canEnter=nodeUnlocked(node,completed,fourComplete,pilotAccess);
+  const destinationFor=direction=>{const vector=DIRECTION_VECTOR[direction];return node.links.map(id=>MAP_ROUTE[id]).filter(target=>nodeUnlocked(target,completed,fourComplete,pilotAccess)).map(target=>{const dx=target.x-node.x,dy=target.y-node.y,length=Math.hypot(dx,dy);return{target,score:(dx/length)*vector.x+(dy/length)*vector.y};}).sort((a,b)=>b.score-a.score)[0];};
+  const canMove=direction=>!motion.moving&&destinationFor(direction)?.score>.28;
+  const move=direction=>{if(!canMove(direction))return;const target=destinationFor(direction).target;setMotion({moving:true,facing:target.x===node.x?motion.facing:target.x>node.x?1:-1});setNodeId(target.id);setTimeout(()=>setMotion(current=>({...current,moving:false})),720);};
+  useEffect(()=>{if(!previewFinal)localStorage.setItem(MAP_POSITION_KEY,JSON.stringify({node:nodeId}));},[nodeId,previewFinal]);
+  useEffect(()=>{
+    const keys={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
+    const down=event=>{const direction=keys[event.key];if(!direction||event.repeat)return;event.preventDefault();move(direction);};window.addEventListener('keydown',down);return()=>window.removeEventListener('keydown',down);
+  });
+  return <><div className={`map-traveler${motion.moving?' walking':''}`} style={{left:`${node.x}%`,top:`${node.y}%`}} aria-label="Protagonista recorriendo los caminos del mapa">{node.name&&<strong className="traveler-place">{node.name}</strong>}<span className="traveler-shadow"/><img src="./art/hero-dodge.webp" alt="" style={{'--facing':motion.facing}}/></div><div className="map-touch-controls" aria-label="Controles para seguir los caminos"><span className="map-control-hint">SIGUE LAS LÍNEAS</span><button aria-label="Tomar el camino hacia arriba" disabled={!canMove('up')} onClick={()=>move('up')}>▲</button><button aria-label="Tomar el camino hacia la izquierda" disabled={!canMove('left')} onClick={()=>move('left')}>◀</button><button className="enter-path" aria-label={node.href?`Entrar a ${node.name}`:'Llega a un portal para entrar'} disabled={!node.href||!canEnter||motion.moving} onClick={()=>{if(node.href&&canEnter)location.href=node.href}}>◆</button><button aria-label="Tomar el camino hacia la derecha" disabled={!canMove('right')} onClick={()=>move('right')}>▶</button><button aria-label="Tomar el camino hacia abajo" disabled={!canMove('down')} onClick={()=>move('down')}>▼</button>{node.href&&canEnter&&!motion.moving&&<small className="enter-path-label">ENTRAR</small>}</div></>;
+}
+
+function ShopDialogue({lines,onComplete}){
+  const [index,setIndex]=useState(0),[visible,setVisible]=useState('');
+  const entry=lines[index],message=typeof entry==='string'?entry:entry.text,speaker=typeof entry==='string'?'PROFE DANI B':entry.speaker;
+  useEffect(()=>{let cursor=0;setVisible('');const timer=setInterval(()=>{cursor+=1;setVisible(message.slice(0,cursor));if(cursor>=message.length)clearInterval(timer);},24);return()=>clearInterval(timer);},[message]);
+  const finished=visible.length>=message.length&&index===lines.length-1;
+  const advance=()=>{if(visible.length<message.length){setVisible(message);return;}if(index===lines.length-1){onComplete?.();return;}setVisible('');setIndex(current=>current+1);};
+  return <div className={`shop-dialogue ${speaker==='PROTAGONISTA'?'hero-speaking':''}`}><div className="dialogue-speaker"><span>{speaker}</span><i>{index+1}/{lines.length}</i></div><p aria-live="polite">{visible}<span className="dialogue-cursor" aria-hidden="true">▌</span></p><button onClick={advance}>{visible.length<message.length?'MOSTRAR TODO':finished?'SALIR DE LA TIENDA →':'SIGUIENTE →'}</button></div>;
+}
+
+export default function AdventureHub({view='map',levels}){
+  const [progress]=useState(()=>read(PROGRESS_KEY,{})),[shop,setShop]=useState(()=>read(SHOP_KEY,{owned:[],equipped:[]})),[shopDialogueDone,setShopDialogueDone]=useState(()=>read(SHOP_DIALOGUE_DONE_KEY,false));
+  const previewFinal=new URLSearchParams(location.search).get('previewFinal')==='1';
+  const [pilotAccess,setPilotAccess]=useState(()=>previewFinal||hasPilotAccess()),[showPilotGate,setShowPilotGate]=useState(false),[logicLocked,setLogicLocked]=useState(()=>requiresLogicRecovery());
+  const crystals=Object.values(progress).reduce((sum,item)=>sum+(item?.crystal||0),0),stars=Object.values(progress).reduce((sum,item)=>sum+(item?.stars||0),0);
+  const progressPercent=completionPercent(progress,levels.length);
+  const spent=ITEMS.filter(item=>shop.owned.includes(item.id)).reduce((sum,item)=>sum+item.cost,0),balance=Math.max(0,crystals-spent);
+  const completed=useMemo(()=>{const saved=Object.keys(progress).filter(id=>progress[id]?.complete||progress[id]?.crystal).map(Number);return new Set(previewFinal?Array.from({length:67},(_,index)=>index+1):saved);},[progress,previewFinal]);
+  const starterCompleted=STARTER_WORLD_ENDS.filter(id=>completed.has(id)).length,fourComplete=starterCompleted===STARTER_WORLD_ENDS.length;
+  const [showMilestone,setShowMilestone]=useState(()=>view==='map'&&fourComplete&&!previewFinal&&!read(STARTER_CELEBRATION_KEY,false));
+  const worldId=Number(new URLSearchParams(location.search).get('world'))||1,selectedWorld=WORLDS.find(world=>world.id===worldId)||WORLDS[0];
+  const completedInWorld=world=>world.levels.filter(id=>completed.has(id)).length;
+  const worldUnlocked=world=>world.id<=4||fourComplete&&pilotAccess&&(!world.unlockAfter||completed.has(world.unlockAfter));
+  const unlockedWorlds=WORLDS.filter(world=>worldUnlocked(world));
+  const nextUnseenWorld=()=>{const seen=new Set(read(WORLD_DISCOVERY_KEY,[1,2,3,4]));return unlockedWorlds.find(world=>world.id>4&&!seen.has(world.id))?.id||null;};
+  const [revealingWorldId,setRevealingWorldId]=useState(()=>view==='map'&&!previewFinal&&!showMilestone?nextUnseenWorld():null);
+  const nextLevelId=selectedWorld.levels.find(id=>!completed.has(id));
+  const visibleWorldLevels=selectedWorld.levels.filter(id=>completed.has(id)||id===nextLevelId);
+  useEffect(()=>applyCosmetics(shop.equipped),[shop]);
+  useEffect(()=>{if(!revealingWorldId)return;const timer=setTimeout(()=>{const seen=new Set(read(WORLD_DISCOVERY_KEY,[1,2,3,4]));seen.add(revealingWorldId);localStorage.setItem(WORLD_DISCOVERY_KEY,JSON.stringify([...seen]));setRevealingWorldId(null);},2800);return()=>clearTimeout(timer);},[revealingWorldId]);
+  useEffect(()=>{document.title=`Valle Esmeralda · ${view==='shop'?'Tienda':view==='world'?selectedWorld.name:'Mapa de mundos'}`;},[view,selectedWorld.name]);
+  const changeItem=item=>setShop(current=>{const owned=current.owned.includes(item.id);if(!owned&&balance<item.cost)return current;const next=owned?{...current,equipped:current.equipped.includes(item.id)?current.equipped.filter(id=>id!==item.id):[...current.equipped,item.id]}:{owned:[...current.owned,item.id],equipped:[...current.equipped,item.id]};localStorage.setItem(SHOP_KEY,JSON.stringify(next));return next;});
+  const title=view==='shop'?'Tienda del Valle':view==='world'?selectedWorld.name:'Mapa de los mundos';
+  const teacherAdvice=completed.size<5?'Prueba primero una sola modificación y observa cómo cambia el recorrido. Así descubrirás qué control necesitas.':completed.size<12?'Antes de responder, busca qué cambia y qué se mantiene. Esa comparación suele revelar la regla.':'En una función, cada entrada debe conducir a una salida. Comprueba tus puntos antes de lanzar.';
+  const starterAdvice=fourComplete?'¡Has superado los cuatro mundos iniciales! Demostraste control y experimentación, razonamiento lógico, dominio de coordenadas y funciones, y orientación estratégica. El camino hacia la Fortaleza de los Enigmas ya está abierto.':`Puedes comenzar por cualquiera de los cuatro mundos iniciales. Has superado ${starterCompleted} de 4; completa los cuatro para abrir el camino hacia las regiones siguientes.`;
+  const closeMilestone=()=>{localStorage.setItem(STARTER_CELEBRATION_KEY,'true');setShowMilestone(false);setRevealingWorldId(nextUnseenWorld());};
+  const finishShopDialogue=()=>{localStorage.setItem(SHOP_DIALOGUE_DONE_KEY,'true');setShopDialogueDone(true);location.href='?view=map';};
+  const unlockPilot=()=>{setPilotAccess(true);setShowPilotGate(false);setRevealingWorldId(5);};
+  return <main className="adventure-hub"><header><a className="brand" href="?view=map"><span>VALLE</span> ESMERALDA<small>UNA AVENTURA POR DESCUBRIR</small></a><div className="chapter"><span>CENTRO DE LA AVENTURA</span><strong>{title}</strong></div><div className="inventory"><span>★ <b>{stars}</b></span><span>◆ <b>{balance}</b><small> disponibles</small></span></div></header>
+    <nav className="hub-tabs"><a className={view==='map'||view==='world'?'active':''} href="?view=map">⌖ MAPA DE MUNDOS</a><a className={view==='shop'?'active':''} href="?view=shop">◆ TIENDA</a><a href="?level=21">VOLVER AL JUEGO →</a><button onClick={()=>{clearAuthSession();location.href='?';}}>SALIR</button></nav>
+    {view==='map'&&<section className={`world-map-screen overworld-screen${showMilestone?' path-opening':''}`} aria-label="Mapa fantástico de los mundos"><img className="overworld-art" src="./art/world-map-clean.webp" alt="Archipiélago fantástico con mundos conectados"/><div className="map-progress" aria-label={`Progreso total: ${progressPercent}%`}><small>AVANCE TOTAL</small><strong>{progressPercent}%</strong><span>{completed.size} de {levels.length} niveles</span><i><b style={{width:`${progressPercent}%`}}/></i></div><MapRoutes completed={completed} fourComplete={fourComplete} pilotAccess={pilotAccess} opening={showMilestone} revealingWorldId={revealingWorldId}/>{!fourComplete&&<div className="starter-gate" aria-label={`Camino cerrado. ${starterCompleted} de 4 mundos iniciales superados.`}><span>◆</span><small>{starterCompleted}/4</small></div>}{fourComplete&&!pilotAccess&&<button className="pilot-map-lock" onClick={()=>setShowPilotGate(true)} aria-label="Ingresar código del docente para abrir la prueba piloto"><span>◆</span><strong>PRUEBA PILOTO</strong><small>Código del docente</small></button>}{unlockedWorlds.map(world=><a aria-label={`Entrar a ${world.name}. ${completedInWorld(world)} de ${world.levels.length} niveles completados.`} className={`map-location world-${world.id}${world.id<=4?' starter-world':''}${world.id===12?' final-world':''}${revealingWorldId===world.id?' world-revealing':''}`} style={world.position} href={`?view=world&world=${world.id}`} key={world.id}><span className="location-pulse">◆</span>{world.id===12&&<em className="final-world-badge">MUNDO FINAL</em>}<strong>{world.name}</strong><small>{completedInWorld(world)} / {world.levels.length} completados</small></a>)}<a aria-label="Entrar a la Tienda del Valle" className="map-location map-store" href="?view=shop"><span className="location-pulse">◆</span><strong>Tienda del Valle</strong><small>Objetos y mejoras</small></a><MapTraveler completed={completed} fourComplete={fourComplete} pilotAccess={pilotAccess} previewFinal={previewFinal}/>{showMilestone&&<div className="starter-milestone" role="dialog" aria-modal="true" aria-labelledby="starter-win-title"><div className="milestone-rays"/><img src="./art/profe-dani-shop.webp" alt="Profe Dani B felicitando al protagonista"/><div><small>LOS CUATRO CAMINOS COMPLETADOS</small><h2 id="starter-win-title">¡El sendero se ha abierto!</h2><p>Hasta este momento has demostrado cuatro capacidades:</p><ol><li>Control y experimentación.</li><li>Razonamiento lógico.</li><li>Coordenadas y funciones.</li><li>Orientación y estrategia.</li></ol><strong>El portal de la prueba piloto ya puede activarse.</strong><button onClick={closeMilestone}>VER EL NUEVO CAMINO →</button></div></div>}{showPilotGate&&<PilotAccessGate embedded onUnlocked={unlockPilot}/>}</section>}
+    {view==='world'&&(selectedWorld.id>4&&!pilotAccess?<PilotAccessGate onUnlocked={unlockPilot}/>:<section className="world-detail" style={{'--world-image':`url(${selectedWorld.image})`}}><div className="world-detail-copy"><a href="?view=map">← Volver al mapa</a><span>MUNDO {selectedWorld.id}</span><h1>{selectedWorld.name}</h1><p>{selectedWorld.subtitle}</p><strong>{completedInWorld(selectedWorld)} de {selectedWorld.levels.length} niveles completados</strong></div><div className="world-level-route">{visibleWorldLevels.map((id,index)=>{const info=levels.find(level=>level.id===id),isNext=id===nextLevelId;return <a href={`?level=${id}`} className={`${completed.has(id)?'complete':''}${isNext?' current':''}`} key={id}><i>{completed.has(id)?'★':'◆'}</i><b>{isNext?'Siguiente misión':`Nivel ${id}`}</b><span>{info?.name}</span>{index<visibleWorldLevels.length-1&&<em>→</em>}</a>})}</div><div className="world-detail-tip">La ruta revela un nuevo nivel cada vez que completas una misión.</div>{selectedWorld.id===2&&logicLocked&&<MemoryRecoveryGate onRecovered={()=>setLogicLocked(false)}/>}</section>)}
+    {view==='shop'&&<section className="shop-screen scene-shop"><div className="shop-scene"><img src="./art/profe-dani-shop.webp" alt="Profe Dani B atendiendo su tienda detrás de un mostrador de madera"/><img className="shop-visiting-hero" src="./art/hero-dodge.webp" alt="El protagonista entrando a la tienda"/><div className="shop-scene-title"><small>TALLER Y TIENDA</small><strong>Profe Dani B</strong></div><div className="shop-scene-wallet"><small>TU BOLSA</small><strong>◆ {balance}</strong></div><div className={`shop-starter-progress${fourComplete?' complete':''}`}><small>CUATRO CAMINOS</small><strong>{starterCompleted}/4</strong></div>{!shopDialogueDone&&<ShopDialogue lines={[{speaker:'PROFE DANI B',text:starterAdvice},{speaker:'PROTAGONISTA',text:'Entonces puedo elegir por dónde comenzar, pero debo superar los cuatro caminos para continuar.'},{speaker:'PROFE DANI B',text:'Exactamente. Cada mundo entrena una capacidad diferente y todas serán necesarias más adelante.'},{speaker:'PROFE DANI B',text:teacherAdvice},{speaker:'PROFE DANI B',text:'Las mejoras de esta tienda pueden acompañarte, pero el verdadero avance lo consigues resolviendo los desafíos.'}]} onComplete={finishShopDialogue}/>}</div><div className="shop-grid">{ITEMS.map(item=>{const owned=shop.owned.includes(item.id),equipped=shop.equipped.includes(item.id);return <article className={`shop-item ${item.id} ${equipped?'equipped':''}`} key={item.id}><div className="item-preview"><span>{item.icon}</span></div><small>{equipped?'EQUIPADO':owned?'EN TU COLECCIÓN':'NUEVO'}</small><h2>{item.name}</h2><p>{item.description}</p><button disabled={!owned&&balance<item.cost} onClick={()=>changeItem(item)}>{equipped?'GUARDAR':owned?'EQUIPAR':balance>=item.cost?`COMPRAR · ◆ ${item.cost}`:`FALTAN ${item.cost-balance} ◆`}</button></article>})}</div><p className="shop-note">Las mejoras de la tienda son visuales y no alteran la dificultad ni las respuestas.</p></section>}
+  </main>;
+}
+
