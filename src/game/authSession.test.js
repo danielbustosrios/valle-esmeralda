@@ -18,3 +18,13 @@ test('closing the preview session clears both browser stores',()=>{
   clearAuthSession();
   assert.equal(readAuthSession(),null);
 });
+
+test('student registration keeps the full name and an allowed course',()=>{
+  const session=startPreviewSession({firstName:' Ana ',lastName:' Torres ',course:'10.3',email:'ANA@COLEGIO.EDU'},true);
+  assert.equal(session.name,'Ana Torres');
+  assert.equal(session.firstName,'Ana');
+  assert.equal(session.lastName,'Torres');
+  assert.equal(session.course,'10.3');
+  assert.equal(session.email,'ana@colegio.edu');
+});
+
