@@ -3,6 +3,7 @@ import {getLogicChallenges} from '../game/logicChallenges.js';
 import HubLinks from './HubLinks.jsx';
 import {MemoryRecoveryGate} from './PilotGates.jsx';
 import {clearLogicFailures,recordLogicFailure,requiresLogicRecovery} from '../game/pilotAccess.js';
+import {recordGameError} from '../game/progressTracking.js';
 
 const ANSWER_X=[500,740,970],START_X=165,PROGRESS_KEY='valle-esmeralda-logic-progress';
 const shuffled=values=>{const result=[...values];for(let index=result.length-1;index>0;index--){const other=Math.floor(Math.random()*(index+1));[result[index],result[other]]=[result[other],result[index]];}return result;};
@@ -18,7 +19,7 @@ export default function LogicLevel({level,levels,onSelectLevel,onNext}){
   const restart=()=>{clearTimeout(delay.current);cancelAnimationFrame(animation.current);setRound(0);setOrder([0,1,2,3]);setHearts(1);setMistakes(0);setMoves(0);prepare(challenges[0].answers);};
   useEffect(restart,[level.id]);
   useEffect(()=>()=>{cancelAnimationFrame(animation.current);clearTimeout(delay.current);},[]);
-  const fail=reason=>{if(status!=='playing')return;const remaining=hearts-1,nextOrder=[...order.slice(1),order[0]];setMistakes(value=>value+1);setHearts(remaining);setFeedback(reason==='time'?'Se terminó el tiempo.':`La regla no lleva a ${answerOrder[selection]}.`);setStatus(remaining?'wrong':'lost');if(remaining)delay.current=setTimeout(()=>{setOrder(nextOrder);prepare(challenges[nextOrder[0]].answers);},1750);else setRecoveryRequired(recordLogicFailure()>=2);};
+  const fail=reason=>{if(status!=='playing')return;recordGameError(level.id);const remaining=hearts-1,nextOrder=[...order.slice(1),order[0]];setMistakes(value=>value+1);setHearts(remaining);setFeedback(reason==='time'?'Se terminó el tiempo.':`La regla no lleva a ${answerOrder[selection]}.`);setStatus(remaining?'wrong':'lost');if(remaining)delay.current=setTimeout(()=>{setOrder(nextOrder);prepare(challenges[nextOrder[0]].answers);},1750);else setRecoveryRequired(recordLogicFailure()>=2);};
   useEffect(()=>{if(!level.timeLimit||status!=='playing'||menu)return;const timer=setInterval(()=>setSeconds(value=>Math.max(0,value-1)),1000);return()=>clearInterval(timer);},[level.id,level.timeLimit,status,round,menu]);
   useEffect(()=>{if(level.timeLimit&&seconds===0&&status==='playing')fail('time');},[seconds,status]);
   const move=delta=>{if(status!=='playing'||moving||menu)return;const next=selection<0?0:Math.max(0,Math.min(2,selection+delta));if(next===selection)return;const from=position.x,to=ANSWER_X[next],started=performance.now();setSelection(next);setMoving(true);setMoves(value=>value+1);
@@ -45,3 +46,4 @@ export default function LogicLevel({level,levels,onSelectLevel,onNext}){
     {menu&&<div className="modal-backdrop"><section className="menu-card logic-map"><small>CAPÍTULO 02</small><h2>Mapa de los desafíos</h2><p>Tu progreso se conserva en este dispositivo.</p><button onClick={()=>setMenu(false)}>Continuar</button><div className="map-levels">{logicLevels.map(item=>{const index=levels.findIndex(candidate=>candidate.id===item.id),record=saved[item.id];return <button className={item.id===level.id?'map-current':'secondary'} key={item.id} onClick={()=>onSelectLevel(index)}><b>Nivel {item.id}</b><span>{record?'★'.repeat(record.stars):'○ Sin completar'}</span></button>;})}</div><button className="secondary" onClick={()=>onSelectLevel(0)}>Volver al Capítulo 1</button></section></div>}
     </section><footer><div className="guide-icon">✧</div><p>{status==='wrong'?`${question.hint} Ahora recibirás otro desafío.`:status==='correct'?question.hint:'Colócate frente a una respuesta y pulsa ELEGIR. La decisión solo cuenta al confirmarla.'}</p><span className="attempts">Una vida · Decisión {round+1}/4 · {level.timeLimit?`${seconds} s`:'Sin límite de tiempo'}</span></footer></main>;
 }
+
