@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import HubLinks from './HubLinks.jsx';
+import {recordGameError} from '../game/progressTracking.js';
 
 import {CONFIGS,W,H,kickResult} from '../game/island.js';
 const key=(x,y)=>`${x},${y}`;
@@ -21,7 +22,7 @@ export default function IslandPuzzleLevel({level,onNext}){
   const facingRock=rockAt(player.x+facing.x,player.y+facing.y);
   const blocked=(x,y)=>SOLIDS.has(key(x,y))||Boolean(rockAt(x,y))||(!platesActive&&x===GATE.x&&y===GATE.y);
   const save=()=>{try{const storageKey='valle-esmeralda-logic-progress',progress=JSON.parse(localStorage.getItem(storageKey)||'{}');localStorage.setItem(storageKey,JSON.stringify({...progress,[level.id]:{stars:3,crystal:1,complete:true}}));}catch{}};
-  function hurt(){if(invulnerable.current||status!=='play')return;invulnerable.current=true;setHurtView(true);stopWalking();setHearts(value=>{const next=value-1;if(next<=0)setStatus('lost');return Math.max(0,next);});setPlayer(START);playerRef.current=START;setMessage('¡Ay! El centinela te alcanzó. Observa su recorrido antes de cruzar.');later(()=>{invulnerable.current=false;setHurtView(false);},900);}
+  function hurt(){if(invulnerable.current||status!=='play')return;recordGameError(level.id);invulnerable.current=true;setHurtView(true);stopWalking();setHearts(value=>{const next=value-1;if(next<=0)setStatus('lost');return Math.max(0,next);});setPlayer(START);playerRef.current=START;setMessage('¡Ay! El centinela te alcanzó. Observa su recorrido antes de cruzar.');later(()=>{invulnerable.current=false;setHurtView(false);},900);}
 
   function move(dx,dy){
     if(status!=='play'||kicking||invulnerable.current)return false;
@@ -94,3 +95,4 @@ setMessage(lit===PLATES.length?'¡Todos los mecanismos respondieron! La puerta d
     {status==='lost'&&<div className="victory defeat"><div className="win-star">♡</div><small>{timeLeft===0&&cfg.time?'SE ACABÓ EL TIEMPO':'EL CENTINELA TE ATRAPÓ'}</small><h1>La cámara se cerró</h1><p>Observa la ruta completa antes de mover el primer objeto.</p><button onClick={()=>location.reload()}>Reintentar ↻</button></div>}
     </section><footer><div className="guide-icon">✦</div><p>Guía cada objeto hasta un disco y recupera el cristal.</p><span>Flechas/WASD · Espacio: patear</span></footer></main>;
 }
+
