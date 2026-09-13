@@ -1,7 +1,9 @@
 node_modules/
+.env.local
 dist/
 .vercel/
 /artifacts/source-art/
 /artifacts/*.png
 /*-qa.png
 /*-check.png
+
