@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
 import HubLinks from './HubLinks.jsx';
 import {canKickStone} from '../game/pythagorean.js';
+import {recordGameError} from '../game/progressTracking.js';
 
 const fresh=()=>({x:150,vx:0,facing:1,jump:0,vy:0,run:0,rocks:[],spawn:.55,elapsed:0,id:1,invulnerable:0});
 const BOSS_MAX_HEALTH=16;
@@ -15,7 +16,7 @@ export default function PythagoreanBossLevel(){
  const introDuration=finalTest?1.5:7;
  const later=(fn,ms)=>{const id=setTimeout(()=>{timers.current.delete(id);fn();},ms);timers.current.add(id);};
  const save=()=>{try{const key='valle-esmeralda-logic-progress',progress=JSON.parse(localStorage.getItem(key)||'{}');localStorage.setItem(key,JSON.stringify({...progress,68:{stars:3,crystal:1,complete:true}}));}catch{}};
- const hurt=()=>{const state=motion.current;if(state.invulnerable>0||phaseRef.current==='lost')return;state.invulnerable=1.15;setBossMood('pleased');setHearts(value=>{const next=Math.max(0,value-1);heartsRef.current=next;if(next<=0){phaseRef.current='lost';setPhase('lost');stoneRef.current=null;heartRef.current=null;setAttackStone(null);setHeartPickup(null);setMessage('El Coloso cerró las ruinas. Vuelve a estudiar su patrón.');}return next;});later(()=>setBossMood('idle'),700);};
+ const hurt=()=>{const state=motion.current;if(state.invulnerable>0||phaseRef.current==='lost')return;recordGameError(68);state.invulnerable=1.15;setBossMood('pleased');setHearts(value=>{const next=Math.max(0,value-1);heartsRef.current=next;if(next<=0){phaseRef.current='lost';setPhase('lost');stoneRef.current=null;heartRef.current=null;setAttackStone(null);setHeartPickup(null);setMessage('El Coloso cerró las ruinas. Vuelve a estudiar su patrón.');}return next;});later(()=>setBossMood('idle'),700);};
  const jump=()=>{const state=motion.current;if(state.jump<2&&phaseRef.current!=='won'&&phaseRef.current!=='lost'){state.jump=.01;state.vy=620;setView({...state,rocks:state.rocks.map(rock=>({...rock}))});setMessage('¡Buen salto! Sigue moviéndote antes del siguiente impacto.');}};
  const placeCounterStone=()=>{if(phaseRef.current!=='fight'||stoneRef.current||performance.now()<finalWaveRef.current)return;const positions=[250,430,320,535,390],hitCount=BOSS_MAX_HEALTH-bossHealthRef.current,stone={x:positions[hitCount%positions.length],id:Date.now(),fading:false};stoneRef.current=stone;setAttackStone(stone);setMessage('¡Hay una piedra en el puente! Acércate y patéala hacia el Coloso.');later(()=>{if(stoneRef.current?.id!==stone.id)return;stoneRef.current={...stone,fading:true};setAttackStone({...stone,fading:true});},6000);later(()=>{if(stoneRef.current?.id!==stone.id)return;stoneRef.current=null;setAttackStone(null);setMessage('La piedra se desvaneció. Pronto aparecerá otra.');later(placeCounterStone,700);},7400);};
  const kickStone=()=>{
@@ -61,3 +62,4 @@ export default function PythagoreanBossLevel(){
    {phase==='lost'&&<div className="victory defeat"><div className="win-star">♡</div><small>LAS RUINAS SIGUEN CERRADAS</small><h1>El Coloso resistió</h1><p>Muévete antes de que caiga cada roca y guarda vidas para los ataques más agresivos.</p><button onClick={()=>location.reload()}>Reintentar ↻</button></div>}
   </section><footer><div className="guide-icon">✦</div><p>Esquiva las rocas; al quedar frente a una piedra, el mismo control sirve para patearla.</p><span className="attempts">Flechas/WASD · Espacio: saltar o patear</span></footer></main>;
 }
+
