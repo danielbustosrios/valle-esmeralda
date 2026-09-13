@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import HubLinks from './HubLinks.jsx';
+import {recordGameError} from '../game/progressTracking.js';
 
 const KEY='valle-esmeralda-logic-progress';
 const PATTERNS=[[1,3,2,0],[2,0,3,1],[3,2,0,1]],GLYPHS=['─','╲','│','╱'],LANES=[350,600,850];
@@ -13,7 +14,7 @@ export default function DarkBossLevel({level,onNext}){
  const channel=[[160,610],...POINTS.map(p=>[p.x,p.y]),[600,190]],beam=[[160,610],...POINTS.slice(0,reached+1).map(p=>[p.x,p.y])];
  if(aligned)beam.push([600,190]);else{const p=POINTS[reached],d=DIRS[mirrors[reached]];beam.push([p.x+d[0]*115,p.y+d[1]*115])}
  const asPoints=a=>a.map(p=>p.join(',')).join(' ');
- useEffect(()=>{if(status!=='playing')return;let next,strike,clear,active=true;const prepare=()=>{if(!active)return;const chosen=(attackRef.current+++round*2+1)%3;setAttacks(v=>v+1);setWarning(chosen);strike=setTimeout(()=>{if(!active)return;setWarning(null);setImpact(chosen);clear=setTimeout(()=>setImpact(null),450);const now=Date.now();if(laneRef.current===chosen&&now>=lockRef.current){lockRef.current=now+1800;setHearts(v=>{const n=v-1;if(n<=0)setStatus('lost');return Math.max(0,n)})}next=setTimeout(prepare,Math.max(1800,2500-round*250))},1250)};next=setTimeout(prepare,3600);return()=>{active=false;clearTimeout(next);clearTimeout(strike);clearTimeout(clear)}},[status,round]);
+ useEffect(()=>{if(status!=='playing')return;let next,strike,clear,active=true;const prepare=()=>{if(!active)return;const chosen=(attackRef.current+++round*2+1)%3;setAttacks(v=>v+1);setWarning(chosen);strike=setTimeout(()=>{if(!active)return;setWarning(null);setImpact(chosen);clear=setTimeout(()=>setImpact(null),450);const now=Date.now();if(laneRef.current===chosen&&now>=lockRef.current){recordGameError(level.id);lockRef.current=now+1800;setHearts(v=>{const n=v-1;if(n<=0)setStatus('lost');return Math.max(0,n)})}next=setTimeout(prepare,Math.max(1800,2500-round*250))},1250)};next=setTimeout(prepare,3600);return()=>{active=false;clearTimeout(next);clearTimeout(strike);clearTimeout(clear)}},[status,round]);
  useEffect(()=>{const down=e=>{const d=e.key==='ArrowLeft'||e.key==='a'?-1:e.key==='ArrowRight'||e.key==='d'?1:0;if(d&&status==='playing'){e.preventDefault();setLane(v=>Math.max(0,Math.min(2,v+d)))}};addEventListener('keydown',down);return()=>removeEventListener('keydown',down)},[status]);
  const rotate=i=>status==='playing'&&setMirrors(a=>a.map((v,j)=>i===j?(v+1)%4:v));
  const fire=()=>{if(!aligned||status!=='playing')return;setFlash(true);setTimeout(()=>{setFlash(false);if(round===2)setStatus('won');else{setRound(v=>v+1);setMirrors([0,0,0,0])}},700)};
@@ -34,3 +35,4 @@ export default function DarkBossLevel({level,onNext}){
  {status==='won'&&<div className="victory"><div className="win-star">{'★'.repeat(stars)}</div><small>MUNDO COMPLETADO</small><h1>¡La luz venció a la sombra!</h1><p>Construiste tres circuitos de cuatro espejos y derrotaste al Guardián.</p><div className="rewards">★ {stars} estrellas <span>◆ 1 cristal</span></div><button onClick={onNext}>Volver al mapa →</button></div>}{status==='lost'&&<div className="victory defeat"><div className="win-star">♡</div><small>LA SOMBRA TE ALCANZÓ</small><h1>El Guardián sigue en pie</h1><p>Observa el carril marcado y muévete antes del golpe.</p><button onClick={restart}>Reintentar ↻</button></div>}</section>
  <footer><div className="guide-icon">✧</div><p>Sigue el haz: cada espejo cambia físicamente su dirección. Completa el circuito y esquiva los ataques.</p><span className="attempts">Desafío final 5/5</span></footer></main>
 }
+
