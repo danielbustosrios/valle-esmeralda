@@ -1,0 +1,10 @@
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {chromium}=require('C:/Users/USUARIO/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const page=await browser.newPage({viewport:{width:1280,height:900}});
+await page.addInitScript(()=>{Math.random=()=>.9;});
+await page.goto('http://127.0.0.1:5173/?level=68&stones=1');
+await page.locator('.counter-stone').waitFor({timeout:15000});
+await page.screenshot({path:'artifacts/level-68-stone.png',fullPage:true});
+await browser.close();

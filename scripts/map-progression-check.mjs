@@ -1,0 +1,44 @@
+import {createRequire} from 'node:module';
+import assert from 'node:assert/strict';
+const require=createRequire(import.meta.url);
+const {chromium}=require('C:/Users/USUARIO/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const progressKey='valle-esmeralda-logic-progress';
+const progressFor=ids=>Object.fromEntries(ids.map(id=>[id,{complete:true,crystal:1}]));
+async function pageWith(ids){const page=await browser.newPage({viewport:{width:1280,height:900}});await page.addInitScript(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:progressKey,value:progressFor(ids)});await page.goto('http://127.0.0.1:5173/?view=map');await page.locator('.overworld-screen').waitFor();return page;}
+try{
+ const before=await pageWith([26,31]);
+ assert.equal(await before.locator('.starter-world.locked').count(),0);
+ assert.equal(await before.locator('.world-5').count(),0);
+ assert.equal(await before.locator('.world-6').count(),0,'later worlds remain hidden until all four opening worlds are complete');
+ assert.match(await before.locator('.starter-gate').innerText(),/1\/4/);
+ assert.equal(await before.locator('.location-pulse').count(),5,'only the four opening worlds and the shop are visible');
+ assert.ok(await before.locator('.map-routes .open .route-path').count()>0);
+ assert.equal(await before.locator('.map-routes .locked .route-path').count(),0);
+ await before.close();
+ const after=await pageWith([11,17,21,26]);
+ assert.equal(await after.locator('.starter-gate').count(),0);
+ assert.equal(await after.locator('.world-5').count(),1);
+ assert.equal(await after.locator('.world-6').count(),0);
+ await after.locator('.starter-milestone').waitFor();
+ assert.match(await after.locator('.starter-milestone').innerText(),/Control y experimentación[\s\S]*Razonamiento lógico[\s\S]*Coordenadas y funciones[\s\S]*Orientación y estrategia/);
+ await after.getByRole('button',{name:'ABRIR EL CAMINO →'}).click();
+ assert.equal(await after.locator('.starter-milestone').count(),0);
+ assert.equal(await after.locator('.world-5.world-revealing').count(),1);
+ assert.ok(await after.locator('.map-routes .revealing').count()>0);
+ assert.equal(await after.evaluate(key=>localStorage.getItem(key),'valle-esmeralda-four-worlds-celebrated'),'true');
+ await after.close();
+ const finalPreview=await browser.newPage({viewport:{width:1280,height:900}});
+ await finalPreview.goto('http://127.0.0.1:5173/?view=map&previewFinal=1');
+ await finalPreview.locator('.overworld-screen').waitFor();
+ assert.equal(await finalPreview.locator('.location-pulse').count(),13,'the final preview reveals all twelve worlds and the shop');
+ assert.equal(await finalPreview.locator('.starter-milestone').count(),0);
+ assert.equal(await finalPreview.locator('.world-12').count(),1);
+ assert.equal(await finalPreview.locator('.world-12 .final-world-badge').innerText(),'MUNDO FINAL');
+ assert.match(await finalPreview.locator('.world-12').getAttribute('aria-label'),/0 de 1 niveles completados/);
+ assert.equal(await finalPreview.locator('.world-12').getAttribute('style'),'left: 50%; top: 17%;');
+ assert.equal(await finalPreview.locator('.map-traveler').getAttribute('style'),'left: 31%; top: 40%;');
+ assert.match(await finalPreview.locator('.overworld-art').getAttribute('src'),/world-map-clean\.png/);
+ await finalPreview.close();
+ console.log('World map passed: hidden future worlds, subtle routes, shop links, and milestone opening.');
+}finally{await browser.close();}
