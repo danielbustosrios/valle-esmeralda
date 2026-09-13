@@ -13,8 +13,10 @@ import PythagoreanBossLevel from './components/PythagoreanBossLevel.jsx';
 import {PilotAccessGate} from './components/PilotGates.jsx';
 import AuthScreen from './components/AuthScreen.jsx';
 import HubLinks from './components/HubLinks.jsx';
+import AdminDashboard from './components/AdminDashboard.jsx';
 import {hasPilotAccess,starterWorldsComplete} from './game/pilotAccess.js';
 import {currentAppUser,onAuthChange,sessionToAppUser} from './game/supabaseAuth.js';
+import {recordGameError,startProgressTracking} from './game/progressTracking.js';
 import {LEVEL,LEVELS,pointAt,trajectory,encounter,obstacleImpact,coefficients,hitsSegment,baseLevelId} from './game/trajectory.js';
 import {rockHitsHero} from './game/dodge.js';
 function Slider({id,label,min=0,max,value,disabled,onChange,left,right}){return <div className={`control ${id==='curvature'?'':id+'-control'}`}><div className="control-heading"><label htmlFor={id}>{label}</label></div><input id={id} type="range" min={min} max={max} value={value} disabled={disabled} onChange={e=>onChange(Number(e.target.value))} style={{'--fill':`${(value-min)/(max-min)*100}%`}}/><div className="range-labels"><span>{left}</span><span>{right}</span></div></div>}
@@ -23,6 +25,7 @@ export default function App(){
  const hubView=new URLSearchParams(location.search).get('view');
  const [authSession,setAuthSession]=useState(undefined),[recoveringPassword,setRecoveringPassword]=useState(false);
  useEffect(()=>{let active=true;const unsubscribe=onAuthChange(async(event,session)=>{if(!active)return;if(event==='PASSWORD_RECOVERY'){setRecoveringPassword(true);return;}if(event==='SIGNED_OUT'){setAuthSession(null);return;}if(session)setAuthSession(await sessionToAppUser(session));});currentAppUser().then(user=>{if(active)setAuthSession(user);}).catch(()=>{if(active)setAuthSession(null);});return()=>{active=false;unsubscribe();};},[]);
+ useEffect(()=>authSession&&!authSession.isAdmin?startProgressTracking(authSession.id):undefined,[authSession?.id,authSession?.isAdmin]);
  const [pilotAccess,setPilotAccess]=useState(hasPilotAccess);
  useEffect(()=>{let equipped=[];try{equipped=JSON.parse(localStorage.getItem('valle-esmeralda-shop')||'{}').equipped||[];}catch{};['trail','cannon','frame'].forEach(id=>document.body.classList.toggle(`cosmetic-${id}`,equipped.includes(id)));},[]);
  const [levelIndex,setLevelIndex]=useState(()=>Math.min(Math.max(Number(new URLSearchParams(location.search).get('level'))||1,1),LEVELS.length)-1),[height,setHeight]=useState(0),[direction,setDirection]=useState(0);
@@ -80,7 +83,7 @@ export default function App(){
    }
    state.rocks=state.rocks.filter(rock=>rock.y-rock.r<=650);
    if(avoided)setBossHits(value=>value+avoided);
-   if(wasHit){state.invulnerable=1.25;setHearts(value=>{const next=value-1;if(next<=0)setPhase('lost');return Math.max(0,next);});}
+   if(wasHit){recordGameError(level.id);state.invulnerable=1.25;setHearts(value=>{const next=value-1;if(next<=0)setPhase('lost');return Math.max(0,next);});}
    const shownSeconds=Math.min(level.survivalSeconds,Math.floor(state.elapsed));setBattleElapsed(shownSeconds);
    setDodgeView({x:state.x,vx:state.vx,facing:state.facing,runCycle:state.runCycle,jump:state.jump,rocks:state.rocks.map(rock=>({...rock})),invulnerable:state.invulnerable,elapsed:state.elapsed});
    if(state.elapsed>=level.survivalSeconds){setPhase('won');return;}
@@ -94,11 +97,11 @@ export default function App(){
   if(shooting||won||lost||menu||level.boss)return;setMissFeedback(null);setGateActive(false);setAttempts(n=>n+1);setPhase('flying');let elapsed=0,last=null,gatePassed=false,previous=pointAt(0,curvature,height,direction,playLevel);setProjectile(previous);
   const tick=now=>{if(last!==null&&!pause.current)elapsed+=Math.min(now-last,40);last=now;const t=Math.min(elapsed/playLevel.duration,1),p=pointAt(t,curvature,height,direction,playLevel);
    const impact=obstacleImpact(previous,p,playLevel.obstacle);
-   if(impact){setMissMessage('¡La madera detuvo el disparo! Prueba un arco más alto.');setPhase('miss');setMissFeedback({...impact,id:now});setProjectile(null);return;}
+   if(impact){recordGameError(level.id);setMissMessage('¡La madera detuvo el disparo! Prueba un arco más alto.');setPhase('miss');setMissFeedback({...impact,id:now});setProjectile(null);return;}
    if(playLevel.gate&&!gatePassed&&hitsSegment(previous,p,playLevel.gate)){gatePassed=true;setGateActive(true);}
    const contact=encounter(previous,p,playLevel,defeated,barrelUsed);
-   if(contact){if(playLevel.gate&&!gatePassed){setMissMessage('La diana final no cuenta todavía: primero atraviesa el aro luminoso.');setGateActive(false);setPhase('miss');setMissFeedback({...contact.point,id:now});setProjectile(null);return;}setPending(contact);setPhase('hit');setProjectile(null);return;}
-   setProjectile(p);previous=p;if(t>=1||p.y>590){const targetT=(playLevel.target.x-playLevel.origin.x)/(850+direction*4);const above=pointAt(targetT,curvature,height,direction,playLevel).y<playLevel.target.y;setMissMessage(level.boss?'¡Fallaste! Ajusta rápido antes del próximo ataque.':playLevel.gate&&gatePassed?'¡Atravesaste el aro! Ajusta para que ese mismo disparo también golpee la diana final.':stage===1?(above?'Pasó por arriba. Prueba una curvatura más cerrada.':'Pasó por abajo. Prueba una curvatura más abierta.'):'¡Casi! Sigue el camino de luz y prueba otro recorrido.');setGateActive(false);setPhase('miss');setMissFeedback({...p,id:now});setProjectile(null);return;}
+   if(contact){if(playLevel.gate&&!gatePassed){recordGameError(level.id);setMissMessage('La diana final no cuenta todavía: primero atraviesa el aro luminoso.');setGateActive(false);setPhase('miss');setMissFeedback({...contact.point,id:now});setProjectile(null);return;}setPending(contact);setPhase('hit');setProjectile(null);return;}
+   setProjectile(p);previous=p;if(t>=1||p.y>590){recordGameError(level.id);const targetT=(playLevel.target.x-playLevel.origin.x)/(850+direction*4);const above=pointAt(targetT,curvature,height,direction,playLevel).y<playLevel.target.y;setMissMessage(level.boss?'¡Fallaste! Ajusta rápido antes del próximo ataque.':playLevel.gate&&gatePassed?'¡Atravesaste el aro! Ajusta para que ese mismo disparo también golpee la diana final.':stage===1?(above?'Pasó por arriba. Prueba una curvatura más cerrada.':'Pasó por abajo. Prueba una curvatura más abierta.'):'¡Casi! Sigue el camino de luz y prueba otro recorrido.');setGateActive(false);setPhase('miss');setMissFeedback({...p,id:now});setProjectile(null);return;}
    frame.current=requestAnimationFrame(tick);
   };frame.current=requestAnimationFrame(tick);
  }
@@ -110,6 +113,7 @@ export default function App(){
  const difficulty=battleElapsed<12?'SUAVE':battleElapsed<24?'RÁPIDO':battleElapsed<level.survivalSeconds-10?'EXTREMO':'AVALANCHA';
  if(authSession===undefined)return <main className="auth-loading" aria-live="polite"><span>◆</span><strong>ABRIENDO VALLE ESMERALDA…</strong></main>;
  if(!authSession||recoveringPassword)return <AuthScreen recovering={recoveringPassword} onRecovered={()=>setRecoveringPassword(false)} onAuthenticated={setAuthSession}/>;
+ if(authSession.isAdmin)return <AdminDashboard user={authSession}/>;
  if(hubView==='map'||hubView==='shop'||hubView==='world')return <AdventureHub view={hubView} levels={LEVELS}/>;
  if(level.id>26&&(!pilotAccess||!starterWorldsComplete()))return <main className="pilot-locked-page"><PilotAccessGate requirementsMet={starterWorldsComplete()} onUnlocked={()=>setPilotAccess(true)}/></main>;
  if(level.darkBoss)return <DarkBossLevel level={level} onNext={()=>location.href='?view=map'}/>;
