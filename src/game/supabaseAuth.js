@@ -51,14 +51,17 @@ export async function signOut(){
 export async function sessionToAppUser(session){
   if(!session?.user)return null;
   const metadata=session.user.user_metadata||{};
-  let profile=null;
+  let profile=null,role=null;
   if(supabaseClient){
-    const {data}=await supabaseClient.from('profiles').select('first_name,last_name,course').eq('id',session.user.id).maybeSingle();
-    profile=data;
+    const [profileResult,roleResult]=await Promise.all([
+      supabaseClient.from('profiles').select('first_name,last_name,course').eq('id',session.user.id).maybeSingle(),
+      supabaseClient.from('user_roles').select('role').eq('user_id',session.user.id).maybeSingle()
+    ]);
+    profile=profileResult.data;role=roleResult.data;
   }
   const firstName=profile?.first_name||metadata.first_name||'';
   const lastName=profile?.last_name||metadata.last_name||'';
-  return {id:session.user.id,email:session.user.email,firstName,lastName,course:profile?.course||metadata.course||'',name:[firstName,lastName].filter(Boolean).join(' ')||session.user.email?.split('@')[0],preview:false};
+  return {id:session.user.id,email:session.user.email,firstName,lastName,course:profile?.course||metadata.course||'',name:[firstName,lastName].filter(Boolean).join(' ')||session.user.email?.split('@')[0],isAdmin:role?.role==='admin',preview:false};
 }
 
 export async function currentAppUser(){
