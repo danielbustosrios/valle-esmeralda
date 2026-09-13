@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import HubLinks from './HubLinks.jsx';
+import {recordGameError} from '../game/progressTracking.js';
 
 const W=13,H=9,START={x:1,y:1},EXIT={x:11,y:7};
 const cellId=(x,y)=>`${x},${y}`;
@@ -43,7 +44,7 @@ export default function BomberLevel({level,onNext}){
  const blocked=(x,y,ignoreMetal=false)=>isSolid(x,y)||brickRef.current.has(cellId(x,y))||wallRef.current.has(cellId(x,y))||(bombRef.current&&bombRef.current.x===x&&bombRef.current.y===y)||(!plateIsActive()&&isGate(x,y))||(!ignoreMetal&&Boolean(metalAt(x,y)));
 
  function save(){try{const key='valle-esmeralda-logic-progress',progress=JSON.parse(localStorage.getItem(key)||'{}');localStorage.setItem(key,JSON.stringify({...progress,[level.id]:{stars:3,crystal:crystalCollected?1:0,complete:true}}));}catch{}}
- function hurt(){setHearts(value=>{const next=value-1;if(next<=0)setStatus('lost');else{setPlayer(START);setMessage('¡Ay! Busca una ruta segura antes de acercarte.');}return Math.max(0,next);});}
+ function hurt(){recordGameError(level.id);setHearts(value=>{const next=value-1;if(next<=0)setStatus('lost');else{setPlayer(START);setMessage('¡Ay! Busca una ruta segura antes de acercarte.');}return Math.max(0,next);});}
  function move(dx,dy){
   if(status!=='play'||flyingRef.current)return;
   if(dx)setFacing(dx);
@@ -177,3 +178,4 @@ export default function BomberLevel({level,onNext}){
   {status==='won'&&<div className="victory"><div className="win-star">★★★</div><small>{cfg.final?'MUNDO COMPLETADO':'RUTA ABIERTA'}</small><h1>{cfg.final?'¡Dominaste el núcleo!':'¡Escapaste de la cámara!'}</h1><p>{cfg.final?'Las Ruinas de la Pólvora han quedado bajo control.':crystalCollected?'También encontraste el cristal secreto.':'Abriste el portal, pero quedó un cristal secreto por encontrar.'}</p><button onClick={onNext}>{cfg.final?'Volver al mapa':'Siguiente misión →'}</button></div>}{status==='lost'&&<div className="victory defeat"><div className="win-star">♡</div><small>ÚNICA VIDA PERDIDA</small><h1>La ruta te encerró</h1><p>Un solo golpe termina el intento. Deja una salida antes de colocar la bomba.</p><button onClick={()=>location.reload()}>Reintentar ↻</button></div>}
   </section><footer><div className="guide-icon">✦</div><p>Encuentra la llave, descubre el cristal y usa {cfg.plates.length===1?'un bloque':'los bloques'} para mantener abierta la barrera.</p><span>Flechas/WASD · Espacio: bomba</span></footer></main>;
 }
+
