@@ -14,14 +14,15 @@ import {PilotAccessGate} from './components/PilotGates.jsx';
 import AuthScreen from './components/AuthScreen.jsx';
 import HubLinks from './components/HubLinks.jsx';
 import {hasPilotAccess,starterWorldsComplete} from './game/pilotAccess.js';
-import {readAuthSession} from './game/authSession.js';
+import {currentAppUser,onAuthChange,sessionToAppUser} from './game/supabaseAuth.js';
 import {LEVEL,LEVELS,pointAt,trajectory,encounter,obstacleImpact,coefficients,hitsSegment,baseLevelId} from './game/trajectory.js';
 import {rockHitsHero} from './game/dodge.js';
 function Slider({id,label,min=0,max,value,disabled,onChange,left,right}){return <div className={`control ${id==='curvature'?'':id+'-control'}`}><div className="control-heading"><label htmlFor={id}>{label}</label></div><input id={id} type="range" min={min} max={max} value={value} disabled={disabled} onChange={e=>onChange(Number(e.target.value))} style={{'--fill':`${(value-min)/(max-min)*100}%`}}/><div className="range-labels"><span>{left}</span><span>{right}</span></div></div>}
 const newDodgeState=()=>({x:600,vx:0,facing:1,runCycle:0,jump:0,vy:0,rocks:[],spawnIn:.7,elapsed:0,nextId:1,invulnerable:0});
 export default function App(){
  const hubView=new URLSearchParams(location.search).get('view');
- const [authSession,setAuthSession]=useState(readAuthSession);
+ const [authSession,setAuthSession]=useState(undefined),[recoveringPassword,setRecoveringPassword]=useState(false);
+ useEffect(()=>{let active=true;const unsubscribe=onAuthChange(async(event,session)=>{if(!active)return;if(event==='PASSWORD_RECOVERY'){setRecoveringPassword(true);return;}if(event==='SIGNED_OUT'){setAuthSession(null);return;}if(session)setAuthSession(await sessionToAppUser(session));});currentAppUser().then(user=>{if(active)setAuthSession(user);}).catch(()=>{if(active)setAuthSession(null);});return()=>{active=false;unsubscribe();};},[]);
  const [pilotAccess,setPilotAccess]=useState(hasPilotAccess);
  useEffect(()=>{let equipped=[];try{equipped=JSON.parse(localStorage.getItem('valle-esmeralda-shop')||'{}').equipped||[];}catch{};['trail','cannon','frame'].forEach(id=>document.body.classList.toggle(`cosmetic-${id}`,equipped.includes(id)));},[]);
  const [levelIndex,setLevelIndex]=useState(()=>Math.min(Math.max(Number(new URLSearchParams(location.search).get('level'))||1,1),LEVELS.length)-1),[height,setHeight]=useState(0),[direction,setDirection]=useState(0);
@@ -107,7 +108,8 @@ export default function App(){
  const bossStars=won?1+(hearts>=2?1:0)+(bossHits>=20?1:0):0;
  useEffect(()=>{if(!won||level.id>11)return;try{const key='valle-esmeralda-logic-progress',current=JSON.parse(localStorage.getItem(key)||'{}'),earned=level.boss?bossStars:1,next={...current,[level.id]:{stars:Math.max(current[level.id]?.stars||0,earned),crystal:1}};localStorage.setItem(key,JSON.stringify(next));}catch{}},[won,level.id,bossStars]);
  const difficulty=battleElapsed<12?'SUAVE':battleElapsed<24?'RÁPIDO':battleElapsed<level.survivalSeconds-10?'EXTREMO':'AVALANCHA';
- if(!authSession)return <AuthScreen onAuthenticated={setAuthSession}/>;
+ if(authSession===undefined)return <main className="auth-loading" aria-live="polite"><span>◆</span><strong>ABRIENDO VALLE ESMERALDA…</strong></main>;
+ if(!authSession||recoveringPassword)return <AuthScreen recovering={recoveringPassword} onRecovered={()=>setRecoveringPassword(false)} onAuthenticated={setAuthSession}/>;
  if(hubView==='map'||hubView==='shop'||hubView==='world')return <AdventureHub view={hubView} levels={LEVELS}/>;
  if(level.id>26&&(!pilotAccess||!starterWorldsComplete()))return <main className="pilot-locked-page"><PilotAccessGate requirementsMet={starterWorldsComplete()} onUnlocked={()=>setPilotAccess(true)}/></main>;
  if(level.darkBoss)return <DarkBossLevel level={level} onNext={()=>location.href='?view=map'}/>;
@@ -130,6 +132,7 @@ export default function App(){
  {menu&&<div className="modal-backdrop"><section className="menu-card" role="dialog" aria-modal="true" aria-labelledby="menu-title" onKeyDown={e=>{if(e.key==='Tab'){const buttons=e.currentTarget.querySelectorAll('button');if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons[buttons.length-1].focus();}else if(!e.shiftKey&&document.activeElement===buttons[buttons.length-1]){e.preventDefault();buttons[0].focus();}}}}><small>VALLE ESMERALDA</small><h2 id="menu-title">Una pequeña pausa</h2><p>Ajusta el recorrido y recupera el cristal. Puedes intentarlo cuantas veces quieras.</p><button autoFocus onClick={()=>setMenu(false)}>Continuar</button><button className="secondary" onClick={()=>reset()}>Reiniciar nivel</button>{LEVELS.map((l,i)=>i!==levelIndex&&<button className="secondary" key={l.id} onClick={()=>reset(i)}>Jugar Nivel {l.id}</button>)}</section></div>}
  </section><footer><div className="guide-icon">✧</div><p role="status" aria-live="polite">{won?'¡Bien hecho! Has completado el reto.':lost?'Las rocas te alcanzaron, pero puedes volver a intentarlo.':level.boss?'Corre libremente y salta: la lluvia será cada vez más intensa.':hit?(pending?.chain?'¡El barril ha activado una reacción en cadena!':stage>=4?'¡Diana activada! Buen trabajo.':'¡Le diste! El Saqueador no está nada contento.'):shooting?(level.gate&&gateActive?'¡Aro atravesado! Ahora debe llegar a la diana.':'¡Allá va! Sigue el camino de luz.'):phase==='miss'?missMessage:level.previewFraction?`Solo ves el primer tercio. ${stage===5?'Atraviesa el aro y alcanza la diana con el mismo disparo.':'Imagina cómo continúa la parábola.'}`:stage===5?'Haz que un solo disparo atraviese el aro y después golpee la diana.':stage===3?(defeated.length?'¡Uno menos! Busca al otro Saqueador.':'Dos Saqueadores, un barril… ¡Busca tu oportunidad!'):stage===4?'Prueba las tres letras y observa cómo cambia tu parábola.':stage===2?'Ajusta la altura y la curvatura para pasar sobre la madera.':'Ajusta la curvatura. Sigue la luz. Encuentra tu disparo.'}</p><span className="attempts">{level.boss?`${battleElapsed} s · ${bossHits} rocas esquivadas · ${difficulty}`:<>{attempts>0?`${attempts} disparo${attempts===1?'':'s'} · `:''}Intentos ilimitados <b>∞</b></>}</span></footer></main>
 }
+
 
 
 
