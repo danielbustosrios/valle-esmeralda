@@ -85,7 +85,7 @@ function MapTraveler({completed,fourComplete,pilotAccess,previewFinal=false}){
 function ShopDialogue({lines,onComplete}){
   const [index,setIndex]=useState(0),[visible,setVisible]=useState('');
   const entry=lines[index],message=typeof entry==='string'?entry:entry.text,speaker=typeof entry==='string'?'PROFE DANI B':entry.speaker;
-  useEffect(()=>{let cursor=0;setVisible('');const timer=setInterval(()=>{cursor+=1;setVisible(message.slice(0,cursor));if(cursor>=message.length)clearInterval(timer);},24);return()=>clearInterval(timer);},[message]);
+  useEffect(()=>{let cursor=0;setVisible('');const timer=setInterval(()=>{cursor+=1;setVisible(message.slice(0,cursor));if(cursor>=message.length)clearInterval(timer);},48);return()=>clearInterval(timer);},[message]);
   const finished=visible.length>=message.length&&index===lines.length-1;
   const advance=()=>{if(visible.length<message.length){setVisible(message);return;}if(index===lines.length-1){onComplete?.();return;}setVisible('');setIndex(current=>current+1);};
   return <div className={`shop-dialogue ${speaker==='PROTAGONISTA'?'hero-speaking':''}`}><div className="dialogue-speaker"><span>{speaker}</span><i>{index+1}/{lines.length}</i></div><p aria-live="polite">{visible}<span className="dialogue-cursor" aria-hidden="true">▌</span></p><button onClick={advance}>{visible.length<message.length?'MOSTRAR TODO':finished?'SALIR DE LA TIENDA →':'SIGUIENTE →'}</button></div>;
