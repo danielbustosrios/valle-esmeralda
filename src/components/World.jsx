@@ -1,6 +1,7 @@
 import React from 'react';
 import Water from './Water.jsx';
 import {LEVEL,baseLevelId} from '../game/trajectory.js';
+import {heroBodyX} from '../game/dodge.js';
 
 const ROCK_SHAPES=[
   'M-51-16-35-43-7-58 24-51 48-27 58 3 42 34 15 54-18 50-46 29-59 2Z',
@@ -15,6 +16,7 @@ export default function World({level=LEVEL,points,projectile,won,hit,pending,def
   const previewPoints=level.hideTrajectory?[]:level.previewFraction?points.slice(0,Math.ceil(201*level.previewFraction)):points;
   const running=Math.abs(dodgeState.vx||0)>25,bob=dodgeState.jump?0:running?Math.sin(dodgeState.runCycle||0)*4:Math.sin((dodgeState.elapsed||0)*2.5)*1.4;
   const lean=Math.max(-7,Math.min(7,(dodgeState.vx||0)/58));
+  const dodgeBodyX=heroBodyX(dodgeState);
   return <svg className="world" viewBox="0 0 1200 800" role="img" aria-label={level.boss?"Valle Esmeralda durante un derrumbe: el protagonista esquiva muchas rocas":"Valle Esmeralda: protagonista, cañón, ruinas, cascadas y objetivos"}>
     <defs><clipPath id="upper-cleared"><rect x="833" y="276" width="101" height="94" rx="8"/></clipPath><clipPath id="lower-cleared"><rect x="991" y="430" width="99" height="99"/></clipPath><clipPath id="barrel-cleared"><rect x="850" y="466" width="60" height="62"/></clipPath>
       <clipPath id="enemy-face"><ellipse cx="881" cy="319" rx="23" ry="18"/></clipPath>
@@ -39,7 +41,7 @@ export default function World({level=LEVEL,points,projectile,won,hit,pending,def
         <path d="M-31-35-8-44M-43 1-27 8M20-34 35-24" fill="none" stroke="#d0b897" strokeWidth="3.5" strokeLinecap="round" opacity=".58"/>
         <circle cx="-29" cy="22" r="4" fill="#241f1c" opacity=".55"/><circle cx="28" cy="15" r="3" fill="#b19a7f" opacity=".45"/>
       </g>)}
-      <ellipse className="hero-ground-shadow" cx={dodgeState.x} cy="571" rx={Math.max(30,57-dodgeState.jump*.11)} ry="13" opacity={Math.max(.18,.7-dodgeState.jump*.003)}/>
+      <ellipse className="hero-ground-shadow" cx={dodgeBodyX} cy="571" rx={Math.max(24,44-dodgeState.jump*.09)} ry="11" opacity={Math.max(.18,.7-dodgeState.jump*.003)}/>
       <g className={dodgeState.invulnerable>0?'moving-hero is-hit':'moving-hero'} transform={`translate(${dodgeState.x-78} ${405-dodgeState.jump})`}>
         {running&&!dodgeState.jump&&<g className="run-dust" transform={`translate(${dodgeState.facing>0?28:128} 155)`}><circle r="8"/><circle cx={dodgeState.facing>0?-12:12} cy="4" r="5"/></g>}
         <g className={dodgeState.jump?'hero-body jumping':running?'hero-body running':'hero-body idle'} transform={`translate(78 ${166+bob}) scale(${dodgeState.facing||1} 1) rotate(${lean}) translate(-78 -166)`}>
@@ -91,6 +93,7 @@ export default function World({level=LEVEL,points,projectile,won,hit,pending,def
     {won&&<g transform={`translate(${level.target.x} ${level.target.y})`} fill="#fff2a6">{Array.from({length:12},(_,i)=><path key={i} transform={`rotate(${i*30})`} d="m0-35 4-13-4-7-4 7Z"/>)}</g>}
   </svg>;
 }
+
 
 
 
