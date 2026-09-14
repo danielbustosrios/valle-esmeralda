@@ -117,7 +117,7 @@ export default function App(){
  if(authSession===undefined)return <main className="auth-loading" aria-live="polite"><span>◆</span><strong>ABRIENDO VALLE ESMERALDA…</strong></main>;
  if(!authSession||recoveringPassword)return <AuthScreen recovering={recoveringPassword} onRecovered={()=>setRecoveringPassword(false)} onAuthenticated={setAuthSession}/>;
  if(authSession.isAdmin&&!routeParams.has('level'))return <AdminDashboard user={authSession}/>;
- if(hubView==='map'||hubView==='shop'||hubView==='world')return <AdventureHub view={hubView} levels={LEVELS}/>;
+ if(hubView==='map'||hubView==='shop'||hubView==='world')return <AdventureHub view={hubView} levels={LEVELS} user={authSession}/>;
  if(!authSession.isAdmin&&level.id>26&&(!pilotAccess||!starterWorldsComplete()))return <main className="pilot-locked-page"><PilotAccessGate requirementsMet={starterWorldsComplete()} onUnlocked={()=>setPilotAccess(true)}/></main>;
  if(level.darkBoss)return <DarkBossLevel level={level} onNext={()=>location.href='?view=map'}/>;
  if(level.wave)return <WaveLevel level={level} onNext={()=>levelIndex<LEVELS.length-1?reset(levelIndex+1):location.href='?view=map'}/>;
