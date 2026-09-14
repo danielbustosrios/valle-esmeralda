@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {heroBodyX,rockHitsHero} from './dodge.js';
+import {dodgeIntensity,heroBodyX,rockHitsHero} from './dodge.js';
+
+test('the minute challenge has 30 easy, 26 current and 4 calm seconds',()=>{
+  assert.equal(dodgeIntensity(0).phase,'INICIO');
+  assert.ok(dodgeIntensity(29.9).difficulty<.31);
+  assert.equal(dodgeIntensity(30).paceElapsed,0);
+  assert.equal(dodgeIntensity(55.9).phase,'AVALANCHA');
+  assert.ok(dodgeIntensity(55.9).finale>.98);
+  assert.equal(dodgeIntensity(56).phase,'CALMA');
+  assert.equal(dodgeIntensity(59.9).finale,0);
+});
 
 test('visible body centre stays under the feet when the pose turns',()=>{
   assert.equal(heroBodyX({x:600,facing:1}),600);
