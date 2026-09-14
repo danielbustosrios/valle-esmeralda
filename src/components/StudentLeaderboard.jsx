@@ -1,0 +1,14 @@
+import React,{useEffect,useMemo,useState} from 'react';
+import {supabaseClient} from '../game/supabaseAuth.js';
+import {currentStudentRank,isCurrentStudent,sortLeaderboard} from '../game/leaderboard.js';
+
+const duration=value=>{const seconds=Math.max(0,Number(value||0)),hours=Math.floor(seconds/3600),minutes=Math.floor(seconds%3600/60);return hours?`${hours} h ${minutes} min`:minutes?`${minutes} min`:'< 1 min';};
+
+export default function StudentLeaderboard({user,onClose}){
+  const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  const load=async()=>{setLoading(true);setError('');if(!supabaseClient){setError('La clasificación necesita conexión a internet.');setLoading(false);return;}const result=await supabaseClient.rpc('leaderboard');if(result.error)setError('No fue posible cargar la clasificación. Inténtalo nuevamente.');else setRows(sortLeaderboard(result.data||[]));setLoading(false);};
+  useEffect(()=>{load();const key=event=>{if(event.key==='Escape')onClose();};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);},[]);
+  const rank=useMemo(()=>currentStudentRank(rows,user),[rows,user]);
+  return <div className="student-ranking-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}><section className="student-ranking" role="dialog" aria-modal="true" aria-labelledby="student-ranking-title"><header><div><small>EXPLORADORES DEL VALLE</small><h2 id="student-ranking-title">Ranking de estudiantes</h2></div><button autoFocus aria-label="Cerrar ranking" onClick={onClose}>×</button></header>{rank&&<div className="student-own-rank"><span>TU POSICIÓN</span><strong>#{rank}</strong><small>de {rows.length} exploradores</small></div>}<p className="ranking-rule">Orden: mayor avance, menos errores y menor tiempo.</p>{loading&&<p className="ranking-message">Consultando el Valle…</p>}{error&&<div className="ranking-message error"><p>{error}</p><button onClick={load}>REINTENTAR</button></div>}{!loading&&!error&&!rows.length&&<p className="ranking-message">Todavía no hay resultados para mostrar.</p>}{!!rows.length&&<div className="student-ranking-list"><div className="ranking-row ranking-head"><span>Puesto</span><span>Explorador</span><span>Avance</span><span>Errores</span><span>Tiempo</span></div>{rows.map((row,index)=><div className={`ranking-row${isCurrentStudent(row,user)?' is-current':''}`} key={`${row.first_name}-${row.last_initial}-${row.course}-${index}`}><strong>#{index+1}</strong><span><b>{row.first_name} {row.last_initial}</b><small>{row.course}</small></span><b>{row.completion_percent}%</b><span>{row.total_errors}</span><span>{duration(row.play_seconds)}</span></div>)}</div>}<footer><small>Se protege la privacidad mostrando solamente la inicial del apellido.</small><button onClick={load} disabled={loading}>↻ ACTUALIZAR</button></footer></section></div>;
+}
+
