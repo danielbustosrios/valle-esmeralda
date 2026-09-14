@@ -96,7 +96,7 @@ function ShopDialogue({lines,onComplete}){
 }
 
 export default function AdventureHub({view='map',levels,user}){
-  const [progress]=useState(()=>read(PROGRESS_KEY,{})),[shop,setShop]=useState(()=>read(SHOP_KEY,{owned:[],equipped:[]})),[shopDialogueDone,setShopDialogueDone]=useState(()=>read(SHOP_DIALOGUE_DONE_KEY,false));
+  const [progress,setProgress]=useState(()=>read(PROGRESS_KEY,{})),[shop,setShop]=useState(()=>read(SHOP_KEY,{owned:[],equipped:[]})),[shopDialogueDone,setShopDialogueDone]=useState(()=>read(SHOP_DIALOGUE_DONE_KEY,false));
   const [showRanking,setShowRanking]=useState(false);
   const [showShopDialogue,setShowShopDialogue]=useState(()=>!shopDialogueDone),[dialogueRound,setDialogueRound]=useState(0);
   const previewFinal=new URLSearchParams(location.search).get('previewFinal')==='1';
@@ -116,6 +116,7 @@ export default function AdventureHub({view='map',levels,user}){
   const nextLevelId=selectedWorld.levels.find(id=>!completed.has(id));
   const visibleWorldLevels=selectedWorld.levels.filter(id=>completed.has(id)||id===nextLevelId);
   useEffect(()=>applyCosmetics(shop.equipped),[shop]);
+  useEffect(()=>{const refresh=()=>setProgress(read(PROGRESS_KEY,{}));window.addEventListener('valle-progress-changed',refresh);return()=>window.removeEventListener('valle-progress-changed',refresh);},[]);
   useEffect(()=>{if(!revealingWorldId)return;const timer=setTimeout(()=>{const seen=new Set(read(WORLD_DISCOVERY_KEY,[1,2,3,4]));seen.add(revealingWorldId);localStorage.setItem(WORLD_DISCOVERY_KEY,JSON.stringify([...seen]));setRevealingWorldId(null);},2800);return()=>clearTimeout(timer);},[revealingWorldId]);
   useEffect(()=>{document.title=`Valle Esmeralda · ${view==='shop'?'Tienda':view==='world'?selectedWorld.name:'Mapa de mundos'}`;},[view,selectedWorld.name]);
   const title=view==='shop'?'Tienda del Valle':view==='world'?selectedWorld.name:'Mapa de los mundos';
