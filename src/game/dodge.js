@@ -1,7 +1,7 @@
-// The character artwork is asymmetric inside its 156px canvas. When it is
-// mirrored, the visible feet/body centre moves to the opposite side too.
+// The movement coordinate is left of the visible support point in this asset.
+// Its SVG pivot mirrors the pose, while the feet keep this same world offset.
 export function heroBodyX(hero){
-  return hero.x+(hero.facing||1)*18;
+  return hero.x+18;
 }
 
 // A rounded body capsule follows the visible head and torso, excluding cape,
