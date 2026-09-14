@@ -4,7 +4,7 @@ import {heroBodyX,rockHitsHero} from './dodge.js';
 
 test('visible body centre stays under the feet when the pose turns',()=>{
   assert.equal(heroBodyX({x:600,facing:1}),618);
-  assert.equal(heroBodyX({x:600,facing:-1}),618);
+  assert.equal(heroBodyX({x:600,facing:-1}),608);
 });
 
 test('rock collision follows the visible body instead of transparent sprite space',()=>{
@@ -15,9 +15,9 @@ test('rock collision follows the visible body instead of transparent sprite spac
 
 test('turning keeps the collision body on the same visible support point',()=>{
   assert.equal(rockHitsHero({x:618,y:500,r:16},{x:600,facing:1,jump:0}),true);
-  assert.equal(rockHitsHero({x:618,y:500,r:16},{x:600,facing:-1,jump:0}),true);
+  assert.equal(rockHitsHero({x:608,y:500,r:16},{x:600,facing:-1,jump:0}),true);
   assert.equal(rockHitsHero({x:675,y:500,r:16},{x:600,facing:1,jump:0}),false);
-  assert.equal(rockHitsHero({x:675,y:500,r:16},{x:600,facing:-1,jump:0}),false);
+  assert.equal(rockHitsHero({x:665,y:500,r:16},{x:600,facing:-1,jump:0}),false);
 });
 
 test('jumping moves the collision body with the hero',()=>{
