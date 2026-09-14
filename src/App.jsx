@@ -19,7 +19,7 @@ import {currentAppUser,onAuthChange,sessionToAppUser} from './game/supabaseAuth.
 import {recordGameError,startProgressTracking} from './game/progressTracking.js';
 import {installTouchNavigation} from './game/touchNavigation.js';
 import {LEVEL,LEVELS,pointAt,trajectory,encounter,obstacleImpact,coefficients,hitsSegment,baseLevelId} from './game/trajectory.js';
-import {rockHitsHero} from './game/dodge.js';
+import {dodgeIntensity,rockHitsHero} from './game/dodge.js';
 function Slider({id,label,min=0,max,value,disabled,onChange,left,right}){return <div className={`control ${id==='curvature'?'':id+'-control'}`}><div className="control-heading"><label htmlFor={id}>{label}</label></div><input id={id} type="range" min={min} max={max} value={value} disabled={disabled} onChange={e=>onChange(Number(e.target.value))} style={{'--fill':`${(value-min)/(max-min)*100}%`}}/><div className="range-labels"><span>{left}</span><span>{right}</span></div></div>}
 const newDodgeState=()=>({x:600,vx:0,facing:1,runCycle:0,jump:0,vy:0,rocks:[],spawnIn:.7,elapsed:0,nextId:1,invulnerable:0});
 export default function App(){
@@ -63,7 +63,8 @@ export default function App(){
   const tick=now=>{
    const dt=Math.max(0,Math.min((now-last)/1000,.04));last=now;
    const state=dodgeMotion.current;
-   state.elapsed+=dt;state.invulnerable=Math.max(0,state.invulnerable-dt);
+   const previousElapsed=state.elapsed;state.elapsed+=dt;state.invulnerable=Math.max(0,state.invulnerable-dt);
+   if(previousElapsed<56&&state.elapsed>=56){for(const rock of state.rocks){rock.vx*=.3;rock.vy=Math.min(rock.vy,230);rock.gravity=Math.min(rock.gravity,55);}state.spawnIn=Math.max(state.spawnIn,.8);}
    const direction=(moveKeys.current.right?1:0)-(moveKeys.current.left?1:0),targetV=direction*440;
    const acceleration=(direction?1750:2250)*dt,difference=targetV-state.vx;
    state.vx+=Math.sign(difference)*Math.min(Math.abs(difference),acceleration);
@@ -73,11 +74,11 @@ export default function App(){
    if(state.jump>0||state.vy>0){state.jump+=state.vy*dt;state.vy-=1250*dt;if(state.jump<=0){state.jump=0;state.vy=0;}}
    state.spawnIn-=dt;
    if(state.spawnIn<=0){
-    const difficulty=Math.min(1,state.elapsed/level.survivalSeconds),finale=Math.max(0,Math.min(1,(state.elapsed-(level.survivalSeconds-10))/10));
-    const createRock=x=>{const r=27+Math.random()*39,vy=175+difficulty*470+finale*270+Math.random()*95,vx=state.elapsed<7?0:(Math.random()-.5)*(55+difficulty*210+finale*170);return {id:state.nextId++,variant:Math.floor(Math.random()*4),x,y:-r-10,r,vx,vy,gravity:75+difficulty*125+finale*120,rotation:Math.random()*360,spin:(Math.random()-.5)*(150+difficulty*190+finale*140)};};
+    const {difficulty,finale,paceElapsed}=dodgeIntensity(state.elapsed);
+    const createRock=x=>{const r=27+Math.random()*39,vy=175+difficulty*470+finale*270+Math.random()*95,vx=state.elapsed<30||state.elapsed>=56||paceElapsed<7?0:(Math.random()-.5)*(55+difficulty*210+finale*170);return {id:state.nextId++,variant:Math.floor(Math.random()*4),x,y:-r-10,r,vx,vy,gravity:75+difficulty*125+finale*120,rotation:Math.random()*360,spin:(Math.random()-.5)*(150+difficulty*190+finale*140)};};
     const x=75+Math.random()*1050;state.rocks.push(createRock(x));
     if(finale>0&&Math.random()<.25+finale*.5){const otherX=x<600?Math.min(1125,x+260+Math.random()*430):Math.max(75,x-260-Math.random()*430);state.rocks.push(createRock(otherX));}
-    state.spawnIn=Math.max(.15,Math.max(.18,1.18-state.elapsed*.025)*(0.78+Math.random()*.38)*(1-finale*.48));
+    state.spawnIn=Math.max(.15,Math.max(.18,1.18-paceElapsed*.025)*(0.78+Math.random()*.38)*(1-finale*.48));
    }
    let avoided=0,wasHit=false;
    for(const rock of state.rocks){rock.vy+=rock.gravity*dt;rock.x+=rock.vx*dt;if(rock.x<45||rock.x>1155){rock.x=Math.max(45,Math.min(1155,rock.x));rock.vx*=-.72;}rock.y+=rock.vy*dt;rock.rotation+=rock.spin*dt;if(rock.y-rock.r>650)avoided++;
@@ -112,7 +113,7 @@ export default function App(){
  const disabled=shooting||won||lost||menu;
  const bossStars=won?1+(hearts>=2?1:0)+(bossHits>=20?1:0):0;
  useEffect(()=>{if(!won||level.id>11)return;try{const key='valle-esmeralda-logic-progress',current=JSON.parse(localStorage.getItem(key)||'{}'),earned=level.boss?bossStars:1,next={...current,[level.id]:{stars:Math.max(current[level.id]?.stars||0,earned),crystal:1}};localStorage.setItem(key,JSON.stringify(next));}catch{}},[won,level.id,bossStars]);
- const difficulty=battleElapsed<12?'SUAVE':battleElapsed<24?'RÁPIDO':battleElapsed<level.survivalSeconds-10?'EXTREMO':'AVALANCHA';
+ const difficulty=dodgeIntensity(battleElapsed).phase;
  if(authSession===undefined)return <main className="auth-loading" aria-live="polite"><span>◆</span><strong>ABRIENDO VALLE ESMERALDA…</strong></main>;
  if(!authSession||recoveringPassword)return <AuthScreen recovering={recoveringPassword} onRecovered={()=>setRecoveringPassword(false)} onAuthenticated={setAuthSession}/>;
  if(authSession.isAdmin&&!routeParams.has('level'))return <AdminDashboard user={authSession}/>;
