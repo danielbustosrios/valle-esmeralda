@@ -352,13 +352,17 @@ body.cosmetic-trail .coordinate-projectile{filter:drop-shadow(0 0 17px #48edff) 
 @media(pointer:coarse){
  .game,.bomber-stage,.island-stage,.pyth-game,.world-map-screen{touch-action:none}
  .desktop-move-help{display:none}.touch-move-help{display:block}
- .dodge-panel .movement,.maze-pad,.island-pad,.bomb-pad{display:none!important}
- .coordinate-pad{display:block}.coordinate-pad button:not(.mark-point){display:none}.coordinate-pad .mark-point{min-width:160px;min-height:48px;padding:0 18px}
- .logic-buttons button:first-child,.logic-buttons button:last-child,.boss-movement button{display:none}
- .pyth-controls button:first-child,.pyth-controls button:last-child{display:none}
- .map-touch-controls{display:block;padding:5px;border-radius:14px}.map-touch-controls>button:not(.enter-path),.map-control-hint{display:none}.map-touch-controls .enter-path{position:static;width:48px;height:48px}.enter-path-label{top:-18px}
  .screen-mode-button:after{content:none!important}.hub-links .screen-mode-button{font-size:15px}.hub-links .screen-mode-button span{display:none}
  .dodge-panel>div:first-child small:after,.maze-controls>div:first-child small:after,.logic-controls>div:first-child small:after,.coordinate-controls>div:first-child small:after,.bomb-rule small:after,.island-rule small:after{content:' · Desliza sobre el escenario para moverte';color:#77e7d3}
+}
+
+.map-scroll-viewport{overflow:visible}
+@media(max-width:700px){
+ .map-scroll-viewport{position:relative;width:100%;height:min(72svh,620px);overflow:auto;border:1px solid #82966e;border-radius:18px;background:#0b2831;overscroll-behavior:contain;scrollbar-width:thin}
+ .map-scroll-viewport .overworld-screen{width:960px;max-width:none;min-height:0!important;aspect-ratio:16/9;border:0;border-radius:0}
+ .map-touch-controls{position:fixed;right:12px;bottom:18px;z-index:100;display:grid!important;grid-template:42px 42px 42px/42px 42px 42px;gap:3px;padding:6px;border-radius:18px;background:#092936e8}
+ .map-touch-controls .map-control-hint{display:none}
+ .map-touch-controls button{min-width:42px!important;min-height:42px!important}
 }
 
 @media(max-width:900px) and (orientation:landscape){
