@@ -1,7 +1,7 @@
-// The midpoint between the boots is 8px from the SVG pivot. Mirroring the
-// artwork mirrors that support point, so shadow and collision do the same.
+// Movement, ground shadow and collision share one invariant world axis.
+// The artwork may mirror around it, but the physical body never shifts.
 export function heroBodyX(hero){
-  return hero.x+(hero.facing||1)*8;
+  return hero.x;
 }
 
 // A rounded body capsule follows the visible head and torso, excluding cape,
