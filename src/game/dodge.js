@@ -1,7 +1,8 @@
 // The movement coordinate is left of the visible support point in this asset.
-// Its SVG pivot mirrors the pose, while the feet keep this same world offset.
+// The two poses need slightly different offsets because the feet and cape are
+// asymmetric inside the source artwork.
 export function heroBodyX(hero){
-  return hero.x+18;
+  return hero.x+((hero.facing||1)<0?8:18);
 }
 
 // A rounded body capsule follows the visible head and torso, excluding cape,
