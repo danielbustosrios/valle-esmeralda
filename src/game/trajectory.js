@@ -3,7 +3,7 @@ const LEVEL_2={...LEVEL,id:2,name:'Por encima del obstáculo',initialCurvature:8
 const LEVEL_3={...LEVEL,id:3,name:'Una reacción en cadena',enemies:[{...LEVEL.target,id:'upper',hitAreas:[{x:881,y:306,radius:25},{x:888,y:342,radius:29}]},{x:1044,y:487,radius:32,id:'lower',hitAreas:[{x:1042,y:459,radius:28},{x:1046,y:497,radius:30}]}],barrel:{x:880,y:498,radius:25,blastRadius:200}};
 const LEVEL_4={...LEVEL,id:4,name:'El taller del Profe Dani B',origin:{x:290,y:410},target:{x:888,y:334,radius:38},initialCurvature:30};
 const LEVEL_5={...LEVEL,id:5,name:'La prueba de precisión',origin:{x:290,y:410},target:{x:888,y:334,radius:22},gate:{x:760,y:269,radius:13},initialCurvature:30};
-const LEVEL_11={...LEVEL_4,id:11,variantOf:4,name:'El derrumbe de Esmeralda',boss:true,hideTrajectory:true,survivalSeconds:40};
+const LEVEL_11={...LEVEL_4,id:11,variantOf:4,name:'El derrumbe de Esmeralda',boss:true,hideTrajectory:true,survivalSeconds:26};
 const LOGIC_LEVELS=[
   {id:12,name:'El puente de los patrones',logic:true,logicKind:'Secuencias',timeLimit:0},
   {id:13,name:'Las reglas ocultas',logic:true,logicKind:'Relaciones',timeLimit:0},
@@ -109,6 +109,7 @@ export function encounter(a,b,level,defeated=[],barrelUsed=false){
   const {target,t}=collisions[0],chain=target.id==='barrel';
   return {ids:chain?enemies.filter(e=>Math.hypot(e.x-target.x,e.y-target.y)<=level.barrel.blastRadius).map(e=>e.id):[target.id],chain,point:{x:a.x+dx*t,y:a.y+dy*t}};
 }
+
 
 
 
