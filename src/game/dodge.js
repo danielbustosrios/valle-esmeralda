@@ -1,8 +1,7 @@
-// The movement coordinate is left of the visible support point in this asset.
-// The two poses need slightly different offsets because the feet and cape are
-// asymmetric inside the source artwork.
+// The midpoint between the boots is 8px from the SVG pivot. Mirroring the
+// artwork mirrors that support point, so shadow and collision do the same.
 export function heroBodyX(hero){
-  return hero.x+((hero.facing||1)<0?8:18);
+  return hero.x+(hero.facing||1)*8;
 }
 
 // A rounded body capsule follows the visible head and torso, excluding cape,
