@@ -1,5 +1,6 @@
 const url=import.meta.env.VITE_SUPABASE_URL;
 const publicKey=import.meta.env.VITE_SUPABASE_ANON_KEY;
+import {accessCodeEmail} from './accessCode.js';
 
 export const isSupabaseReady=Boolean(url&&publicKey&&globalThis.supabase?.createClient);
 export const supabaseClient=isSupabaseReady?globalThis.supabase.createClient(url,publicKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'valle-esmeralda-auth'}}):null;
@@ -28,6 +29,14 @@ export async function loginStudent({email,password}){
   const client=ensureClient();
   const {data,error}=await client.auth.signInWithPassword({email:email.trim().toLowerCase(),password});
   if(error)throw new Error(explain(error.message));
+  return sessionToAppUser(data.session);
+}
+
+export async function loginStudentCode(code){
+  const client=ensureClient();
+  const normalized=String(code??'').replace(/\D/g,'').slice(0,6);
+  const {data,error}=await client.auth.signInWithPassword({email:accessCodeEmail(normalized),password:normalized});
+  if(error)throw new Error('El código no está activo o no es correcto. Consulta al docente.');
   return sessionToAppUser(data.session);
 }
 
@@ -75,4 +84,3 @@ export function onAuthChange(callback){
   const {data}=supabaseClient.auth.onAuthStateChange((event,session)=>callback(event,session));
   return ()=>data.subscription.unsubscribe();
 }
-

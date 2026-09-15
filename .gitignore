@@ -7,3 +7,5 @@ dist/
 /*-qa.png
 /*-check.png
 
+/student-roster.csv
+/.env.provisioning.local
