@@ -7,10 +7,12 @@ export function installTouchNavigation(){
  let gesture=null,activeKey=null;
  const stop=()=>{if(activeKey)emitKey('keyup',activeKey);activeKey=null;gesture=null;};
  const start=event=>{
-  if(event.touches.length!==1||event.target.closest?.(INTERACTIVE)||!event.target.closest?.(PLAY_AREAS))return;
+  if(event.touches.length!==1){stop();return;}
+  if(event.target.closest?.(INTERACTIVE)||!event.target.closest?.(PLAY_AREAS))return;
   const touch=event.touches[0];gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY};
  };
  const move=event=>{
+  if(event.touches.length!==1){stop();return;}
   if(!gesture)return;
   const touch=[...event.touches].find(item=>item.identifier===gesture.id);if(!touch)return;
   const dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;if(Math.hypot(dx,dy)<24)return;
