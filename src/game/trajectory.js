@@ -9,8 +9,8 @@ const LOGIC_LEVELS=[
   {id:13,name:'Las reglas ocultas',logic:true,logicKind:'Relaciones',timeLimit:0},
   {id:14,name:'La balanza de cristal',logic:true,logicKind:'Deducción',timeLimit:25},
   {id:15,name:'El código de las torres',logic:true,logicKind:'Operaciones',timeLimit:22},
-  {id:16,name:'Secuencias maestras',logic:true,logicKind:'Patrones avanzados',timeLimit:19},
-  {id:17,name:'El desafío del Oráculo',logic:true,logicKind:'Razonamiento mixto',timeLimit:16}
+  {id:16,name:'Secuencias maestras',logic:true,logicKind:'Patrones avanzados',timeLimit:35},
+  {id:17,name:'El desafío del Oráculo',logic:true,logicKind:'Razonamiento mixto',timeLimit:35}
 ];
 const LEVEL_18={id:18,name:'El mapa de coordenadas',coordinate:true};
 const LEVEL_19={id:19,name:'El cañón cartesiano',cannonCoordinate:true};
@@ -109,7 +109,6 @@ export function encounter(a,b,level,defeated=[],barrelUsed=false){
   const {target,t}=collisions[0],chain=target.id==='barrel';
   return {ids:chain?enemies.filter(e=>Math.hypot(e.x-target.x,e.y-target.y)<=level.barrel.blastRadius).map(e=>e.id):[target.id],chain,point:{x:a.x+dx*t,y:a.y+dy*t}};
 }
-
 
 
 

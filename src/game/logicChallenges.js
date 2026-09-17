@@ -24,16 +24,16 @@ export const LOGIC_CHALLENGES={
     {prompt:'2 · 9 · 4 · 16 · 6 · 25 · ?',answers:[8,32,36],correct:8,hint:'Hay dos secuencias intercaladas: pares y cuadrados.'}
   ],
   16:[
-    {prompt:'4 · 7 · 11 · 18 · 29 · ?',answers:[45,47,49],correct:47,hint:'Cada término nace de sumar los dos anteriores.'},
-    {prompt:'2 · 5 · 10 · 17 · 26 · ?',answers:[35,37,39],correct:37,hint:'Las diferencias avanzan con impares consecutivos.'},
-    {prompt:'162 · 54 · 59 · 19⅔ · 24⅔ · ?',answers:['8⅒','8⅔','9⅔'],correct:'8⅔',hint:'Alterna dividir entre 3 y sumar 5.'},
-    {prompt:'3 · 2 · 6 · 6 · 9 · 18 · 12 · ?',answers:[36,48,54],correct:54,hint:'Hay dos secuencias intercaladas: múltiplos de 3 y valores que se triplican.'}
+    {prompt:'4 · 7 · 10 · 13 · ?',answers:[15,16,17],correct:16,hint:'Suma 3 en cada paso.'},
+    {prompt:'5 · 10 · 15 · 20 · ?',answers:[23,24,25],correct:25,hint:'Suma 5 en cada paso.'},
+    {prompt:'1 · 4 · 9 · 16 · ?',answers:[20,25,36],correct:25,hint:'Son los cuadrados: 1², 2², 3², 4²…'},
+    {prompt:'2 · 6 · 10 · 14 · ?',answers:[16,18,20],correct:18,hint:'Suma 4 en cada paso.'}
   ],
   17:[
-    {prompt:'2 · 3 · 7 · 22 · 89 · ?',answers:[445,446,450],correct:446,hint:'Multiplica por 1, 2, 3, 4… y suma 1.'},
-    {prompt:'2 · 6 · 24 · 120 · ?',answers:[600,720,840],correct:720,hint:'Multiplica sucesivamente por 3, 4, 5 y 6.'},
-    {prompt:'4 · 5 · 9 · 18 · 34 · ?',answers:[55,57,59],correct:59,hint:'Las diferencias son cuadrados: 1, 4, 9, 16…'},
-    {prompt:'3 · 9 · 7 · 21 · 19 · 57 · ?',answers:[53,55,59],correct:55,hint:'Alterna multiplicar por 3 y restar 2.'}
+    {prompt:'3 · 7 · 11 · 15 · ?',answers:[18,19,20],correct:19,hint:'Suma 4 en cada paso.'},
+    {prompt:'2 · 3 · 5 · 8 · 12 · ?',answers:[16,17,18],correct:17,hint:'Suma 1, luego 2, luego 3, luego 4…'},
+    {prompt:'4 · 9 · 16 · 25 · ?',answers:[30,32,36],correct:36,hint:'Son cuadrados consecutivos: 2², 3², 4², 5²…'},
+    {prompt:'10 · 18 · 26 · 34 · ?',answers:[40,42,44],correct:42,hint:'Suma 8 en cada paso.'}
   ]
 };
 

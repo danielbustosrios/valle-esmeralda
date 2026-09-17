@@ -15,8 +15,9 @@ test('logic progression contains four valid decisions in levels 12 through 17',(
   }
 });
 
-test('advanced levels contain non-constant and interleaved reasoning patterns',()=>{
-  assert.match(LOGIC_CHALLENGES[16][2].hint,/Alterna/);
-  assert.match(LOGIC_CHALLENGES[16][3].hint,/intercaladas/);
-  assert.match(LOGIC_CHALLENGES[17][2].hint,/cuadrados/);
+test('advanced sequence levels use accessible sums and squares',()=>{
+  for(const id of [16,17])for(const challenge of LOGIC_CHALLENGES[id]){
+    assert.match(challenge.hint,/Suma|cuadrad/i);
+    assert.doesNotMatch(challenge.prompt,/⅓|⅔|⅒/);
+  }
 });
