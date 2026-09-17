@@ -362,6 +362,7 @@ body.cosmetic-trail .coordinate-projectile{filter:drop-shadow(0 0 17px #48edff) 
 
 @media(pointer:coarse){
  .game,.bomber-stage,.island-stage,.pyth-game,.world-map-screen{touch-action:none}
+ .logic-game,.coordinate-game,.cannon-coordinate-game{touch-action:pinch-zoom}
  .desktop-move-help{display:none}.touch-move-help{display:block}
  .dodge-panel .movement,.maze-pad,.island-pad,.bomb-pad{display:none!important}
  .coordinate-pad{display:block}.coordinate-pad button:not(.mark-point){display:none}.coordinate-pad .mark-point{min-width:160px;min-height:48px;padding:0 18px}
