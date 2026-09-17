@@ -19,11 +19,11 @@ import {currentAppUser,onAuthChange,sessionToAppUser} from './game/supabaseAuth.
 import {recordGameError,startProgressTracking} from './game/progressTracking.js';
 import {installTouchNavigation} from './game/touchNavigation.js';
 import {LEVEL,LEVELS,pointAt,trajectory,encounter,obstacleImpact,coefficients,hitsSegment,baseLevelId} from './game/trajectory.js';
-import {dodgeIntensity,rockHitsHero} from './game/dodge.js';
-const OPEN_ACCESS=true;
+import {DODGE_HEART_POSITIONS,dodgeHeartHitsHero,dodgeIntensity,rockHitsHero,shouldSpawnDodgeHeart} from './game/dodge.js';
+const OPEN_ACCESS=false;
 const GUEST_USER={id:null,firstName:'Explorador',lastName:'del Valle',course:'INVITADO',isAdmin:false,isGuest:true};
 function Slider({id,label,min=0,max,value,disabled,onChange,left,right}){return <div className={`control ${id==='curvature'?'':id+'-control'}`}><div className="control-heading"><label htmlFor={id}>{label}</label></div><input id={id} type="range" min={min} max={max} value={value} disabled={disabled} onChange={e=>onChange(Number(e.target.value))} style={{'--fill':`${(value-min)/(max-min)*100}%`}}/><div className="range-labels"><span>{left}</span><span>{right}</span></div></div>}
-const newDodgeState=()=>({x:600,vx:0,facing:1,runCycle:0,jump:0,vy:0,rocks:[],spawnIn:.7,elapsed:0,nextId:1,invulnerable:0});
+const newDodgeState=()=>({x:600,vx:0,facing:1,runCycle:0,jump:0,vy:0,rocks:[],spawnIn:.7,elapsed:0,nextId:1,invulnerable:0,hearts:[],heartSpawned:false});
 export default function App(){
  const routeParams=new URLSearchParams(location.search),hubView=routeParams.get('view')||(!routeParams.has('level')?'map':null);
  const forceLogin=routeParams.get('login')==='1';
@@ -43,7 +43,7 @@ export default function App(){
  const [explored,setExplored]=useState([]),[teacherDismissed,setTeacherDismissed]=useState(false);
  const [hearts,setHearts]=useState(2),[bossHits,setBossHits]=useState(0),[battleElapsed,setBattleElapsed]=useState(0);
  const dodgeMotion=useRef(newDodgeState()),moveKeys=useRef({left:false,right:false});
- const [dodgeView,setDodgeView]=useState(()=>({x:600,vx:0,facing:1,runCycle:0,jump:0,rocks:[],invulnerable:0,elapsed:0}));
+ const [dodgeView,setDodgeView]=useState(()=>({x:600,vx:0,facing:1,runCycle:0,jump:0,rocks:[],invulnerable:0,elapsed:0,hearts:[]}));
  const playLevel=level;
  const teacher=(level.id===4||level.id===3&&explored.length===3&&attempts>=2)&&!teacherDismissed;
  const abc=coefficients(curvature,height,direction);
@@ -75,13 +75,16 @@ export default function App(){
    state.x+=state.vx*dt;if(state.x<95||state.x>1105){state.x=Math.max(95,Math.min(1105,state.x));state.vx=0;}
    state.runCycle+=Math.abs(state.vx)*dt/34;
    if(state.jump>0||state.vy>0){state.jump+=state.vy*dt;state.vy-=1250*dt;if(state.jump<=0){state.jump=0;state.vy=0;}}
+   if(!state.heartSpawned&&shouldSpawnDodgeHeart(previousElapsed,state.elapsed,level.survivalSeconds)){state.heartSpawned=true;state.hearts=DODGE_HEART_POSITIONS.map((x,index)=>({id:index,x}));}
+   const collectedHeart=state.hearts.findIndex(heart=>dodgeHeartHitsHero(heart,state));
+   if(collectedHeart>=0){state.hearts.splice(collectedHeart,1);setHearts(value=>Math.min(2,value+1));}
    state.spawnIn-=dt;
    if(state.spawnIn<=0){
-    const {difficulty,finale,paceElapsed}=dodgeIntensity(state.elapsed);
+    const {difficulty,finale,paceElapsed,spawnFactor}=dodgeIntensity(state.elapsed);
     const createRock=x=>{const r=27+Math.random()*39,vy=175+difficulty*470+finale*270+Math.random()*95,vx=state.elapsed<30||state.elapsed>=56||paceElapsed<7?0:(Math.random()-.5)*(55+difficulty*210+finale*170);return {id:state.nextId++,variant:Math.floor(Math.random()*4),x,y:-r-10,r,vx,vy,gravity:75+difficulty*125+finale*120,rotation:Math.random()*360,spin:(Math.random()-.5)*(150+difficulty*190+finale*140)};};
     const x=75+Math.random()*1050;state.rocks.push(createRock(x));
     if(finale>0&&Math.random()<.25+finale*.5){const otherX=x<600?Math.min(1125,x+260+Math.random()*430):Math.max(75,x-260-Math.random()*430);state.rocks.push(createRock(otherX));}
-    state.spawnIn=Math.max(.15,Math.max(.18,1.18-paceElapsed*.025)*(0.78+Math.random()*.38)*(1-finale*.48));
+    state.spawnIn=Math.max(.15,Math.max(.18,1.18-paceElapsed*.025)*(0.78+Math.random()*.38)*(1-finale*.48)*spawnFactor);
    }
    let avoided=0,wasHit=false;
    for(const rock of state.rocks){rock.vy+=rock.gravity*dt;rock.x+=rock.vx*dt;if(rock.x<45||rock.x>1155){rock.x=Math.max(45,Math.min(1155,rock.x));rock.vx*=-.72;}rock.y+=rock.vy*dt;rock.rotation+=rock.spin*dt;if(rock.y-rock.r>650)avoided++;
@@ -91,13 +94,13 @@ export default function App(){
    if(avoided)setBossHits(value=>value+avoided);
    if(wasHit){recordGameError(level.id);state.invulnerable=1.25;setHearts(value=>{const next=value-1;if(next<=0)setPhase('lost');return Math.max(0,next);});}
    const shownSeconds=Math.min(level.survivalSeconds,Math.floor(state.elapsed));setBattleElapsed(shownSeconds);
-   setDodgeView({x:state.x,vx:state.vx,facing:state.facing,runCycle:state.runCycle,jump:state.jump,rocks:state.rocks.map(rock=>({...rock})),invulnerable:state.invulnerable,elapsed:state.elapsed});
+   setDodgeView({x:state.x,vx:state.vx,facing:state.facing,runCycle:state.runCycle,jump:state.jump,rocks:state.rocks.map(rock=>({...rock})),invulnerable:state.invulnerable,elapsed:state.elapsed,hearts:state.hearts.map(heart=>({...heart}))});
    if(state.elapsed>=level.survivalSeconds){setPhase('won');return;}
    raf=requestAnimationFrame(tick);
   };
   raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
  },[level.boss,level.survivalSeconds,won,lost,menu]);
- function reset(nextIndex=levelIndex){cancelAnimationFrame(frame.current);setPhase('aim');setPending(null);setDefeated([]);setBarrelUsed(false);setGateActive(false);setMissFeedback(null);setProjectile(null);setAttempts(0);setLevelIndex(nextIndex);setHeight(0);setDirection(0);setCurvature(LEVELS[nextIndex].initialCurvature);setMenu(false);setExplored([]);setTeacherDismissed(false);setHearts(2);setBossHits(0);setBattleElapsed(0);dodgeMotion.current=newDodgeState();moveKeys.current={left:false,right:false};setDodgeView({x:600,vx:0,facing:1,runCycle:0,jump:0,rocks:[],invulnerable:0,elapsed:0});}
+ function reset(nextIndex=levelIndex){cancelAnimationFrame(frame.current);setPhase('aim');setPending(null);setDefeated([]);setBarrelUsed(false);setGateActive(false);setMissFeedback(null);setProjectile(null);setAttempts(0);setLevelIndex(nextIndex);setHeight(0);setDirection(0);setCurvature(LEVELS[nextIndex].initialCurvature);setMenu(false);setExplored([]);setTeacherDismissed(false);setHearts(2);setBossHits(0);setBattleElapsed(0);dodgeMotion.current=newDodgeState();moveKeys.current={left:false,right:false};setDodgeView({x:600,vx:0,facing:1,runCycle:0,jump:0,rocks:[],invulnerable:0,elapsed:0,hearts:[]});}
  function adjust(id,setter,value){setter(value);setExplored(v=>v.includes(id)?v:[...v,id]);setMissFeedback(null);if(phase==='miss')setPhase('aim');}
  function launch(){
   if(shooting||won||lost||menu||level.boss)return;setMissFeedback(null);setGateActive(false);setAttempts(n=>n+1);setPhase('flying');let elapsed=0,last=null,gatePassed=false,previous=pointAt(0,curvature,height,direction,playLevel);setProjectile(previous);
@@ -143,7 +146,6 @@ export default function App(){
  {menu&&<div className="modal-backdrop"><section className="menu-card" role="dialog" aria-modal="true" aria-labelledby="menu-title" onKeyDown={e=>{if(e.key==='Tab'){const buttons=e.currentTarget.querySelectorAll('button');if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons[buttons.length-1].focus();}else if(!e.shiftKey&&document.activeElement===buttons[buttons.length-1]){e.preventDefault();buttons[0].focus();}}}}><small>VALLE ESMERALDA</small><h2 id="menu-title">Una pequeña pausa</h2><p>Ajusta el recorrido y recupera el cristal. Puedes intentarlo cuantas veces quieras.</p><button autoFocus onClick={()=>setMenu(false)}>Continuar</button><button className="secondary" onClick={()=>reset()}>Reiniciar nivel</button>{LEVELS.map((l,i)=>i!==levelIndex&&<button className="secondary" key={l.id} onClick={()=>reset(i)}>Jugar Nivel {l.id}</button>)}</section></div>}
  </section><footer><div className="guide-icon">✧</div><p role="status" aria-live="polite">{won?'¡Bien hecho! Has completado el reto.':lost?'Las rocas te alcanzaron, pero puedes volver a intentarlo.':level.boss?'Corre libremente y salta: la lluvia será cada vez más intensa.':hit?(pending?.chain?'¡El barril ha activado una reacción en cadena!':stage>=4?'¡Diana activada! Buen trabajo.':'¡Le diste! El Saqueador no está nada contento.'):shooting?(level.gate&&gateActive?'¡Aro atravesado! Ahora debe llegar a la diana.':'¡Allá va! Sigue el camino de luz.'):phase==='miss'?missMessage:level.previewFraction?`Solo ves el primer tercio. ${stage===5?'Atraviesa el aro y alcanza la diana con el mismo disparo.':'Imagina cómo continúa la parábola.'}`:stage===5?'Haz que un solo disparo atraviese el aro y después golpee la diana.':stage===3?(defeated.length?'¡Uno menos! Busca al otro Saqueador.':'Dos Saqueadores, un barril… ¡Busca tu oportunidad!'):stage===4?'Prueba las tres letras y observa cómo cambia tu parábola.':stage===2?'Ajusta la altura y la curvatura para pasar sobre la madera.':'Ajusta la curvatura. Sigue la luz. Encuentra tu disparo.'}</p><span className="attempts">{level.boss?`${battleElapsed} s · ${bossHits} rocas esquivadas · ${difficulty}`:<>{attempts>0?`${attempts} disparo${attempts===1?'':'s'} · `:''}Intentos ilimitados <b>∞</b></>}</span></footer></main>
 }
-
 
 
 
