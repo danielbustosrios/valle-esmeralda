@@ -41,6 +41,10 @@ export default function World({level=LEVEL,points,projectile,won,hit,pending,def
         <path d="M-31-35-8-44M-43 1-27 8M20-34 35-24" fill="none" stroke="#d0b897" strokeWidth="3.5" strokeLinecap="round" opacity=".58"/>
         <circle cx="-29" cy="22" r="4" fill="#241f1c" opacity=".55"/><circle cx="28" cy="15" r="3" fill="#b19a7f" opacity=".45"/>
       </g>)}
+      {dodgeState.hearts?.map(heart=><g className="dodge-heart-pickup" transform={`translate(${heart.x} 528)`} aria-label="Vida para recuperar" key={heart.id}>
+        <circle className="dodge-heart-glow" r="34"/><circle className="dodge-heart-ring" r="27"/>
+        <text y="12" textAnchor="middle">♥</text>
+      </g>)}
       <ellipse className="hero-ground-shadow" cx={dodgeBodyX} cy="571" rx={Math.max(24,44-dodgeState.jump*.09)} ry="11" opacity={Math.max(.18,.7-dodgeState.jump*.003)}/>
       <g className={dodgeState.invulnerable>0?'moving-hero is-hit':'moving-hero'} transform={`translate(${dodgeState.x-78} ${405-dodgeState.jump})`}>
         {running&&!dodgeState.jump&&<g className="run-dust" transform={`translate(${dodgeState.facing>0?28:128} 155)`}><circle r="8"/><circle cx={dodgeState.facing>0?-12:12} cy="4" r="5"/></g>}
@@ -93,7 +97,6 @@ export default function World({level=LEVEL,points,projectile,won,hit,pending,def
     {won&&<g transform={`translate(${level.target.x} ${level.target.y})`} fill="#fff2a6">{Array.from({length:12},(_,i)=><path key={i} transform={`rotate(${i*30})`} d="m0-35 4-13-4-7-4 7Z"/>)}</g>}
   </svg>;
 }
-
 
 
 
