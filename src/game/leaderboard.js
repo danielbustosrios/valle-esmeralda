@@ -1,5 +1,10 @@
 const text=value=>String(value||'').trim().toLocaleLowerCase('es');
 
+export function completedLevelsFromPercent(percent,totalLevels=63){
+  const safeTotal=Math.max(0,Number(totalLevels)||0),safePercent=Math.min(100,Math.max(0,Number(percent)||0));
+  return Math.min(safeTotal,Math.ceil(safePercent*safeTotal/100));
+}
+
 export function sortLeaderboard(rows=[]){
   return [...rows].sort((a,b)=>Number(b.completion_percent||0)-Number(a.completion_percent||0)||text(a.first_name).localeCompare(text(b.first_name),'es')||text(a.last_initial).localeCompare(text(b.last_initial),'es')||text(a.course).localeCompare(text(b.course),'es'));
 }

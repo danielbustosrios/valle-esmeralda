@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {currentStudentRank,displayedRank,isCurrentStudent,sortLeaderboard} from './leaderboard.js';
+import {completedLevelsFromPercent,currentStudentRank,displayedRank,isCurrentStudent,sortLeaderboard} from './leaderboard.js';
 
 const rows=[
   {first_name:'Laura',last_initial:'P.',course:'10.1',completion_percent:40,total_errors:9,play_seconds:500},
@@ -20,5 +20,12 @@ test('a student can find their position without exposing their full surname',()=
   assert.equal(displayedRank(sorted,0),1);
   assert.equal(displayedRank(sorted,1),1);
   assert.equal(displayedRank(sorted,3),4);
+});
+
+test('student ranking recovers the exact completed-level count from its percentage',()=>{
+  for(let completed=0;completed<=63;completed++){
+    const percent=Math.floor(completed*100/63);
+    assert.equal(completedLevelsFromPercent(percent,63),completed);
+  }
 });
 
