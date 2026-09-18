@@ -365,7 +365,7 @@ body.cosmetic-trail .coordinate-projectile{filter:drop-shadow(0 0 17px #48edff) 
  .world-map-screen{touch-action:pan-y pinch-zoom}
  .logic-game,.coordinate-game,.cannon-coordinate-game{touch-action:pinch-zoom}
  .desktop-move-help{display:none}.touch-move-help{display:block}
- .dodge-panel .movement,.maze-pad{display:none!important}
+ .dodge-panel .movement{display:none!important}
  .bomb-pad,.island-pad{display:grid!important}
  .coordinate-pad{display:block}.coordinate-pad button:not(.mark-point){display:none}.coordinate-pad .mark-point{min-width:160px;min-height:48px;padding:0 18px}
  .logic-buttons button:first-child,.logic-buttons button:last-child,.boss-movement button{display:none}
@@ -423,12 +423,33 @@ body.cosmetic-trail .coordinate-projectile{filter:drop-shadow(0 0 17px #48edff) 
   .starter-milestone h2{font-size:18px}
 }
 
-/* Maze screens: one finger still moves the hero over the board; two fingers
-   zoom/pan the browser, and the information panels remain vertically scrollable. */
+/* Maze screens: the board is reserved for scrolling/zooming. The fixed pad is
+   always kept inside the visible phone viewport and exclusively moves the hero. */
 @media(pointer:coarse){
   .game.maze-game,.maze-game .maze-world{touch-action:pan-x pan-y pinch-zoom}
   .maze-game .maze-controls,.maze-game .maze-objectives{touch-action:pan-y pinch-zoom}
-  .maze-controls>div:first-child small:after{content:' · Desliza en el laberinto para moverte · Pellizca con dos dedos para ampliar';color:#77e7d3}
+  .maze-game .maze-pad{
+    position:fixed;
+    right:max(10px,env(safe-area-inset-right));
+    bottom:max(10px,env(safe-area-inset-bottom));
+    z-index:120;
+    display:grid!important;
+    grid-template:46px 46px 46px/46px 46px 46px;
+    gap:3px;
+    padding:7px;
+    border:1px solid #d7f6e477;
+    border-radius:50%;
+    background:#092936d9;
+    box-shadow:0 6px 24px #031722aa;
+    backdrop-filter:blur(5px);
+    touch-action:none;
+  }
+  .maze-game .maze-pad button{min-width:46px;min-height:46px}
+  .maze-controls>div:first-child small:after{content:' · Arrastra para recorrer la pantalla · Usa las flechas para avanzar';color:#77e7d3}
+}
+@media(pointer:coarse) and (orientation:landscape) and (max-height:500px){
+  .maze-game .maze-pad{grid-template:40px 40px 40px/40px 40px 40px;padding:5px}
+  .maze-game .maze-pad button{min-width:40px;min-height:40px}
 }
 
 .shop-item.reward-unlocked{border-color:#7ff0bd;box-shadow:0 0 28px #48e8a044;background:linear-gradient(160deg,#225c45,#172f32)}
