@@ -435,26 +435,27 @@ body.cosmetic-trail .coordinate-projectile{filter:drop-shadow(0 0 17px #48edff) 
   .maze-game .maze-controls,.maze-game .maze-objectives{touch-action:pan-y pinch-zoom}
   .maze-game .maze-pad{
     position:fixed;
-    right:max(10px,env(safe-area-inset-right));
-    bottom:max(10px,env(safe-area-inset-bottom));
+    right:calc(env(safe-area-inset-right,0px) + 10px);
+    bottom:calc(env(safe-area-inset-bottom,0px) + 84px);
     z-index:120;
     display:grid!important;
-    grid-template:46px 46px 46px/46px 46px 46px;
-    gap:3px;
-    padding:7px;
-    border:1px solid #d7f6e477;
-    border-radius:50%;
-    background:#092936d9;
+    grid-template:". up ." 42px "left center right" 42px ". down ." 42px/42px 42px 42px;
+    gap:4px;
+    padding:6px;
+    border:1px solid #d7f6e499;
+    border-radius:22px;
+    background:#092936ed;
     box-shadow:0 6px 24px #031722aa;
     backdrop-filter:blur(5px);
     touch-action:none;
   }
-  .maze-game .maze-pad button{min-width:46px;min-height:46px}
+  .maze-game .maze-pad button{width:42px;height:42px;min-width:42px;min-height:42px;padding:0;font-size:15px}
+  .maze-game .maze-pad .maze-center{opacity:1}
   .maze-controls>div:first-child small:after{content:' · Arrastra para recorrer la pantalla · Usa las flechas para avanzar';color:#77e7d3}
 }
 @media(pointer:coarse) and (orientation:landscape) and (max-height:500px){
-  .maze-game .maze-pad{grid-template:40px 40px 40px/40px 40px 40px;padding:5px}
-  .maze-game .maze-pad button{min-width:40px;min-height:40px}
+  .maze-game .maze-pad{right:calc(env(safe-area-inset-right,0px) + 8px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);grid-template:". up ." 38px "left center right" 38px ". down ." 38px/38px 38px 38px;padding:5px}
+  .maze-game .maze-pad button{width:38px;height:38px;min-width:38px;min-height:38px}
 }
 
 .shop-item.reward-unlocked{border-color:#7ff0bd;box-shadow:0 0 28px #48e8a044;background:linear-gradient(160deg,#225c45,#172f32)}
