@@ -45,13 +45,6 @@ const LINEAR_LEVELS=[
   {id:45,name:'La pendiente secreta',cannonCoordinate:true,linearFunction:true,linearSet:3},
   {id:46,name:'La recta del Guardavía',cannonCoordinate:true,linearFunction:true,linearSet:4}
 ];
-const WAVE_LEVELS=[
-  {id:47,name:'El primer oleaje',wave:true},
-  {id:48,name:'El arrecife del ritmo',wave:true},
-  {id:49,name:'Los resortes del tiempo',wave:true},
-  {id:50,name:'Seno o coseno',wave:true},
-  {id:51,name:'El Guardián de las Mareas',wave:true}
-];
 const BOMBER_LEVELS=[
   {id:52,name:'La cámara de los bloques de metal',bomber:true},
   {id:53,name:'El corredor blindado',bomber:true},
@@ -80,7 +73,7 @@ export const LEVELS=[
   {...LEVEL_3,id:8,variantOf:3,name:'La cadena oculta',previewFraction:1/3},
   {...LEVEL_4,id:9,variantOf:4,name:'El taller sin guía completa',previewFraction:1/3},
   {...LEVEL_5,id:10,variantOf:5,name:'Precisión entre sombras',previewFraction:1/3},
-  LEVEL_11,...LOGIC_LEVELS,LEVEL_18,LEVEL_19,LEVEL_20,LEVEL_21,...MAZE_LEVELS,...LINEAR_LEVELS,...WAVE_LEVELS,...BOMBER_LEVELS,...ISLAND_PUZZLE_LEVELS,
+  LEVEL_11,...LOGIC_LEVELS,LEVEL_18,LEVEL_19,LEVEL_20,LEVEL_21,...MAZE_LEVELS,...LINEAR_LEVELS,...BOMBER_LEVELS,...ISLAND_PUZZLE_LEVELS,
 ];
 export const baseLevelId=level=>level.variantOf||level.id;
 // The renderer and simulation consume this exact same function. New families can implement pointAt.

@@ -361,10 +361,12 @@ body.cosmetic-trail .coordinate-projectile{filter:drop-shadow(0 0 17px #48edff) 
 :fullscreen main{max-width:none;padding-left:8px;padding-right:8px}:fullscreen main>header{height:64px}:fullscreen .game,:fullscreen .bomber-game,:fullscreen .island-game,:fullscreen .pyth-game{width:100%;margin-top:0;border-radius:8px}:fullscreen .adventure-hub{padding-bottom:0}
 
 @media(pointer:coarse){
- .game,.bomber-stage,.island-stage,.pyth-game,.world-map-screen{touch-action:none}
+ .game,.bomber-stage,.island-stage,.pyth-game{touch-action:pinch-zoom}
+ .world-map-screen{touch-action:pan-y pinch-zoom}
  .logic-game,.coordinate-game,.cannon-coordinate-game{touch-action:pinch-zoom}
  .desktop-move-help{display:none}.touch-move-help{display:block}
- .dodge-panel .movement,.maze-pad,.island-pad,.bomb-pad{display:none!important}
+ .dodge-panel .movement,.maze-pad{display:none!important}
+ .bomb-pad,.island-pad{display:grid!important}
  .coordinate-pad{display:block}.coordinate-pad button:not(.mark-point){display:none}.coordinate-pad .mark-point{min-width:160px;min-height:48px;padding:0 18px}
  .logic-buttons button:first-child,.logic-buttons button:last-child,.boss-movement button{display:none}
  .pyth-controls button:first-child,.pyth-controls button:last-child{display:none}
@@ -399,3 +401,44 @@ body.cosmetic-trail .coordinate-projectile{filter:drop-shadow(0 0 17px #48edff) 
 .admin-actions{display:flex;align-items:end;gap:10px}.admin-actions>button,.admin-level-jump button{height:44px;padding:0 14px;border:1px solid #7ecfbd;border-radius:10px;background:#163f41;color:#dcfff5;font-weight:900}.admin-level-jump{display:grid;grid-template-columns:72px 68px;gap:3px 7px}.admin-level-jump label{grid-column:1/-1;color:#7ce6d2;font-size:8px;font-weight:900;letter-spacing:1px}.admin-level-jump input{width:72px;height:44px;padding:0 10px;border:1px solid #5f8f84;border-radius:9px;background:#071e27;color:#fff;font:800 15px Nunito}
 @media(max-width:800px){.admin-header{grid-template-columns:1fr auto;gap:9px;min-height:78px;padding:11px 15px}.admin-header>div{display:none}.admin-header .brand{font-size:15px;letter-spacing:3px}.admin-header .brand span{font-size:12px}.admin-header .brand small{font-size:6px;letter-spacing:1px}.admin-header>button{padding:0 10px;font-size:8px}.admin-intro{align-items:start;width:calc(100% - 24px);margin:22px auto 15px}.admin-intro h1{font-size:25px}.admin-intro p{font-size:11px}.admin-intro>button{flex:0 0 auto;padding:0 10px;font-size:8px}.admin-summary{grid-template-columns:1fr 1fr;width:calc(100% - 24px);gap:8px}.admin-summary article{padding:13px}.admin-summary strong{font-size:24px}.admin-roster{width:calc(100% - 24px)}.admin-tools{grid-template-columns:1fr 110px}.admin-tools>div{grid-column:1/-1}.admin-tools input{min-width:0;width:100%}.admin-roster table{min-width:780px}.admin-table-wrap{scroll-snap-type:x proximity}.admin-roster th,.admin-roster td{padding:11px 10px}}
 @media(max-width:440px){.admin-intro{display:grid}.admin-actions{justify-content:space-between}.admin-summary article{min-height:105px}.admin-tools{grid-template-columns:1fr}.admin-tools>div{grid-column:auto}.admin-summary small{font-size:8px}}
+
+/* Keep the four-world celebration usable on short and touch screens. */
+.starter-milestone{
+  max-height:calc(100% - 24px);
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-color:#e6c777 #123b40;
+  scrollbar-width:thin;
+}
+.starter-milestone>div:last-child{min-width:0}
+.starter-milestone::-webkit-scrollbar{width:8px}
+.starter-milestone::-webkit-scrollbar-track{background:#123b40;border-radius:8px}
+.starter-milestone::-webkit-scrollbar-thumb{background:#e6c777;border-radius:8px}
+@media(max-width:700px),(max-height:650px){
+  .starter-milestone{align-items:start;grid-template-columns:82px 1fr;padding:12px}
+  .starter-milestone>img{width:78px;height:118px;position:sticky;top:0}
+  .starter-milestone h2{font-size:18px}
+}
+
+/* Maze screens: one finger still moves the hero over the board; two fingers
+   zoom/pan the browser, and the information panels remain vertically scrollable. */
+@media(pointer:coarse){
+  .game.maze-game,.maze-game .maze-world{touch-action:pan-x pan-y pinch-zoom}
+  .maze-game .maze-controls,.maze-game .maze-objectives{touch-action:pan-y pinch-zoom}
+  .maze-controls>div:first-child small:after{content:' · Desliza en el laberinto para moverte · Pellizca con dos dedos para ampliar';color:#77e7d3}
+}
+
+.shop-item.reward-unlocked{border-color:#7ff0bd;box-shadow:0 0 28px #48e8a044;background:linear-gradient(160deg,#225c45,#172f32)}
+.shop-item.reward-unlocked small,.shop-item.reward-unlocked .future-price em{color:#8ff4c9}
+.shop-item.reward-unlocked button{background:linear-gradient(#e8ca72,#bc7d2d);border-color:#fff0ab;color:#173b37;opacity:1}
+.reward-proof-backdrop{position:fixed;z-index:90;inset:0;display:grid;place-items:center;padding:18px;background:#061d29df;backdrop-filter:blur(7px)}
+.reward-proof{width:min(500px,100%);padding:30px;border:2px solid #f2d47d;border-radius:23px;background:radial-gradient(circle at 50% 0,#276656,#0c3037 68%);box-shadow:0 24px 80px #00151d;text-align:center}
+.reward-proof>span{display:block;font-size:70px;filter:drop-shadow(0 0 19px #ffe17c)}
+.reward-proof small{color:#8ff4d9;font-size:9px;font-weight:900;letter-spacing:2px}
+.reward-proof h2{margin:12px 0;color:#fff0ad;font:700 28px Cinzel,Georgia,serif}
+.reward-proof p{color:#d6e9e1;line-height:1.6}
+.reward-proof p strong{color:#ffe292}
+.reward-proof button{width:100%;margin-top:12px;padding:14px;border:1px solid #fff0a8;border-radius:10px;background:linear-gradient(#e3bd62,#b87629);color:#173b37}
