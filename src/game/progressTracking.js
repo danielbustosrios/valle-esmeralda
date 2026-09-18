@@ -1,4 +1,5 @@
 import {supabaseClient} from './supabaseAuth.js';
+import {claimProgressOwner,progressFromRemote} from './progressOwnership.js';
 
 const PROGRESS_KEY='valle-esmeralda-logic-progress';
 const METRICS_KEY='valle-esmeralda-player-metrics';
@@ -34,8 +35,16 @@ function restoreRemoteLevels(levels=[]){
   if(changed){localStorage.setItem(PROGRESS_KEY,JSON.stringify(progress));window.dispatchEvent(new Event('valle-progress-changed'));}
 }
 
-export function startProgressTracking(userId){
+function replaceLocalProgress(remote){
+  const {progress,metrics}=progressFromRemote(remote);
+  localStorage.setItem(PROGRESS_KEY,JSON.stringify(progress));
+  localStorage.setItem(METRICS_KEY,JSON.stringify(metrics));
+  window.dispatchEvent(new Event('valle-progress-changed'));
+}
+
+export function startProgressTracking(userId,onReady=()=>{}){
   if(!supabaseClient||!userId)return()=>{};
+  const changedOwner=claimProgressOwner(userId);
   let stopped=false,sessionId=null,baseSeconds=0,baseErrors=0,remoteLevels=[],remoteStars=0,remoteCrystals=0;
   const startedAt=Date.now();
   const sync=async()=>{
@@ -49,10 +58,11 @@ export function startProgressTracking(userId){
   const initialize=(async()=>{
     const {data}=await supabaseClient.from('student_progress').select('completed_levels,stars,crystals,play_seconds,total_errors').eq('user_id',userId).maybeSingle();
     remoteLevels=(data?.completed_levels||[]).map(Number).filter(Number.isFinite);remoteStars=Number(data?.stars||0);remoteCrystals=Number(data?.crystals||0);
-    restoreRemoteLevels(remoteLevels);
+    if(changedOwner)replaceLocalProgress(data||{});else restoreRemoteLevels(remoteLevels);
     baseSeconds=Number(data?.play_seconds||0);baseErrors=Math.max(0,Number(data?.total_errors||0)-localSummary().total_errors);
     const result=await supabaseClient.from('play_sessions').insert({user_id:userId}).select('id').single();sessionId=result.data?.id||null;
     await sync();
+    if(!stopped)onReady();
   })();
   const flush=()=>initialize.then(()=>sync());activeSync=flush;
   const timer=setInterval(flush,10000),onProgress=()=>flush(),onVisibility=()=>{if(document.visibilityState==='hidden')flush();};
