@@ -27,9 +27,9 @@ const newDodgeState=()=>({x:600,vx:0,facing:1,runCycle:0,jump:0,vy:0,rocks:[],sp
 export default function App(){
  const routeParams=new URLSearchParams(location.search),hubView=routeParams.get('view')||(!routeParams.has('level')?'map':null);
  const forceLogin=routeParams.get('login')==='1';
- const [authSession,setAuthSession]=useState(undefined),[recoveringPassword,setRecoveringPassword]=useState(false);
+ const [authSession,setAuthSession]=useState(undefined),[recoveringPassword,setRecoveringPassword]=useState(false),[progressReadyFor,setProgressReadyFor]=useState(null);
  useEffect(()=>{let active=true;const unsubscribe=onAuthChange(async(event,session)=>{if(!active)return;if(event==='PASSWORD_RECOVERY'){setRecoveringPassword(true);return;}if(event==='SIGNED_OUT'){setAuthSession(null);return;}if(session)setAuthSession(await sessionToAppUser(session));});currentAppUser().then(user=>{if(active)setAuthSession(user);}).catch(()=>{if(active)setAuthSession(null);});return()=>{active=false;unsubscribe();};},[]);
- useEffect(()=>authSession&&!authSession.isAdmin?startProgressTracking(authSession.id):undefined,[authSession?.id,authSession?.isAdmin]);
+ useEffect(()=>{if(!authSession||authSession.isAdmin){setProgressReadyFor(null);return;}setProgressReadyFor(null);return startProgressTracking(authSession.id,()=>setProgressReadyFor(authSession.id));},[authSession?.id,authSession?.isAdmin]);
  const [pilotAccess,setPilotAccess]=useState(hasPilotAccess);
  useEffect(()=>{let equipped=[];try{equipped=JSON.parse(localStorage.getItem('valle-esmeralda-shop')||'{}').equipped||[];}catch{};['trail','cannon','frame'].forEach(id=>document.body.classList.toggle(`cosmetic-${id}`,equipped.includes(id)));},[]);
  useEffect(()=>installTouchNavigation(),[]);
@@ -125,6 +125,7 @@ export default function App(){
  if(authSession===undefined)return <main className="auth-loading" aria-live="polite"><span>◆</span><strong>ABRIENDO VALLE ESMERALDA…</strong></main>;
  const activeUser=authSession||(OPEN_ACCESS&&!forceLogin?GUEST_USER:null);
  if(!activeUser||recoveringPassword)return <AuthScreen recovering={recoveringPassword} onRecovered={()=>setRecoveringPassword(false)} onAuthenticated={setAuthSession}/>;
+ if(!activeUser.isAdmin&&!activeUser.isGuest&&progressReadyFor!==activeUser.id)return <main className="auth-loading" aria-live="polite"><span>◆</span><strong>RECUPERANDO TU PROGRESO…</strong></main>;
  if(activeUser.isAdmin&&!routeParams.has('level'))return <AdminDashboard user={activeUser}/>;
  if(hubView==='map'||hubView==='shop'||hubView==='world')return <AdventureHub view={hubView} levels={LEVELS} user={activeUser}/>;
  if(!activeUser.isAdmin&&level.id>26&&(!pilotAccess||!starterWorldsComplete()))return <main className="pilot-locked-page"><PilotAccessGate requirementsMet={starterWorldsComplete()} onUnlocked={()=>setPilotAccess(true)}/></main>;
