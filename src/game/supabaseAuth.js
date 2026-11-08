@@ -81,6 +81,12 @@ export async function currentAppUser(){
 
 export function onAuthChange(callback){
   if(!supabaseClient)return ()=>{};
-  const {data}=supabaseClient.auth.onAuthStateChange((event,session)=>callback(event,session));
-  return ()=>data.subscription.unsubscribe();
+  // Defer database requests until Supabase releases its authentication lock.
+  let active=true;
+  const timers=new Set();
+  const {data}=supabaseClient.auth.onAuthStateChange((event,session)=>{
+    const timer=setTimeout(()=>{timers.delete(timer);if(active)Promise.resolve(callback(event,session)).catch(()=>{});},0);
+    timers.add(timer);
+  });
+  return ()=>{active=false;timers.forEach(clearTimeout);data.subscription.unsubscribe();};
 }
