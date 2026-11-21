@@ -5,7 +5,7 @@ export function heroBodyX(hero){
 }
 
 export function shouldSpawnDodgeHeart(previousElapsed,elapsed,survivalSeconds=60){
-  const spawnAt=Math.max(0,survivalSeconds-7);
+  const spawnAt=Math.max(0,survivalSeconds-10);
   return previousElapsed<spawnAt&&elapsed>=spawnAt;
 }
 
