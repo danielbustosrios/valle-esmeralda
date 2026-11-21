@@ -39,10 +39,10 @@ test('jumping moves the collision body with the hero',()=>{
   assert.equal(rockHitsHero(rock,{x:600,facing:1,jump:145}),false);
 });
 
-test('the recovery heart appears once when seven seconds remain',()=>{
-  assert.equal(shouldSpawnDodgeHeart(52.9,53,60),true);
-  assert.equal(shouldSpawnDodgeHeart(53,53.1,60),false);
-  assert.equal(shouldSpawnDodgeHeart(52,52.9,60),false);
+test('the recovery heart appears once when ten seconds remain',()=>{
+  assert.equal(shouldSpawnDodgeHeart(49.9,50,60),true);
+  assert.equal(shouldSpawnDodgeHeart(50,50.1,60),false);
+  assert.equal(shouldSpawnDodgeHeart(49,49.9,60),false);
 });
 
 test('the recovery heart is collected near the hero on the platform',()=>{
